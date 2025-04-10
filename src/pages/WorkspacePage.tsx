@@ -17,6 +17,10 @@ import {
   Edit,
   Trash2,
   Loader2,
+  FileUp,
+  FileText,
+  File,
+  X
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -32,6 +36,16 @@ interface Workspace {
   description: string;
   chatCount: number;
   createdAt: Date;
+  files?: WorkspaceFile[];
+}
+
+interface WorkspaceFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  uploadedAt: Date;
 }
 
 export default function WorkspacePage() {
@@ -44,6 +58,9 @@ export default function WorkspacePage() {
   const [newWorkspaceDescription, setNewWorkspaceDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [fileUploadDialogOpen, setFileUploadDialogOpen] = useState(false);
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -59,6 +76,16 @@ export default function WorkspacePage() {
         description: "My personal chat conversations and ideas",
         chatCount: 5,
         createdAt: new Date(Date.now() - 14 * 86400000), // 14 days ago
+        files: [
+          {
+            id: "f1",
+            name: "project-brief.pdf",
+            size: 1258000,
+            type: "application/pdf",
+            url: "#",
+            uploadedAt: new Date(Date.now() - 3 * 86400000),
+          },
+        ],
       },
       {
         id: "w2",
@@ -66,6 +93,7 @@ export default function WorkspacePage() {
         description: "Work-related projects and discussions",
         chatCount: 8,
         createdAt: new Date(Date.now() - 7 * 86400000), // 7 days ago
+        files: [],
       },
       {
         id: "w3",
@@ -73,6 +101,24 @@ export default function WorkspacePage() {
         description: "Research topics and information gathering",
         chatCount: 3,
         createdAt: new Date(Date.now() - 3 * 86400000), // 3 days ago
+        files: [
+          {
+            id: "f2",
+            name: "research-notes.docx",
+            size: 458000,
+            type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            url: "#",
+            uploadedAt: new Date(Date.now() - 1 * 86400000),
+          },
+          {
+            id: "f3",
+            name: "data.xlsx",
+            size: 825000,
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            url: "#",
+            uploadedAt: new Date(Date.now()),
+          },
+        ],
       },
     ];
     
@@ -99,6 +145,7 @@ export default function WorkspacePage() {
         description: newWorkspaceDescription || "No description",
         chatCount: 0,
         createdAt: new Date(),
+        files: [],
       };
       
       setWorkspaces((prev) => [...prev, newWorkspace]);
@@ -129,6 +176,75 @@ export default function WorkspacePage() {
     // In a real app, we would set the active workspace and navigate to chat
     navigate("/chat");
   };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, workspaceId: string) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setIsUploading(true);
+    
+    // Simulate file upload with delay
+    setTimeout(() => {
+      const uploadedFiles: WorkspaceFile[] = Array.from(files).map((file) => ({
+        id: `f${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url: URL.createObjectURL(file), // In a real app, this would be a server URL
+        uploadedAt: new Date(),
+      }));
+      
+      setWorkspaces((prev) => prev.map((workspace) => {
+        if (workspace.id === workspaceId) {
+          return {
+            ...workspace,
+            files: [...(workspace.files || []), ...uploadedFiles]
+          };
+        }
+        return workspace;
+      }));
+      
+      setIsUploading(false);
+      setFileUploadDialogOpen(false);
+      setSelectedWorkspace(null);
+      
+      toast({
+        title: "Files Uploaded",
+        description: `${uploadedFiles.length} file(s) have been uploaded successfully.`,
+      });
+    }, 1500);
+  };
+  
+  const handleDeleteFile = (workspaceId: string, fileId: string) => {
+    setWorkspaces((prev) => prev.map((workspace) => {
+      if (workspace.id === workspaceId) {
+        return {
+          ...workspace,
+          files: (workspace.files || []).filter((file) => file.id !== fileId),
+        };
+      }
+      return workspace;
+    }));
+    
+    toast({
+      title: "File Deleted",
+      description: "The file has been removed from your workspace.",
+    });
+  };
+  
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    else return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+  
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('image')) return <File className="h-5 w-5 text-blue-500" />;
+    if (fileType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
+    if (fileType.includes('word') || fileType.includes('document')) return <FileText className="h-5 w-5 text-blue-600" />;
+    if (fileType.includes('sheet') || fileType.includes('excel')) return <FileText className="h-5 w-5 text-green-600" />;
+    return <FileText className="h-5 w-5 text-gray-500" />;
+  };
   
   if (!isAuthenticated) {
     return (
@@ -147,7 +263,7 @@ export default function WorkspacePage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Workspaces</h1>
             <p className="text-muted-foreground mt-1">
-              Organize and manage your chat conversations
+              Organize and manage your chat conversations and files
             </p>
           </div>
           
@@ -203,6 +319,43 @@ export default function WorkspacePage() {
               </div>
             </DialogContent>
           </Dialog>
+          
+          <Dialog open={fileUploadDialogOpen} onOpenChange={setFileUploadDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Files</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <FileUp className="h-8 w-8 mx-auto mb-4 text-gray-400" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    Drag and drop files here, or click to browse
+                  </p>
+                  <Input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    id="file-upload"
+                    onChange={(e) => selectedWorkspace && handleFileUpload(e, selectedWorkspace)}
+                  />
+                  <Button 
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    variant="outline"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      "Select Files"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </header>
         
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -226,6 +379,16 @@ export default function WorkspacePage() {
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem 
+                        className="flex items-center gap-2"
+                        onClick={() => {
+                          setSelectedWorkspace(workspace.id);
+                          setFileUploadDialogOpen(true);
+                        }}
+                      >
+                        <FileUp className="h-4 w-4" />
+                        Upload Files
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
                         className="flex items-center gap-2 text-destructive"
                         onClick={() => handleDeleteWorkspace(workspace.id)}
                       >
@@ -238,17 +401,48 @@ export default function WorkspacePage() {
                 <CardDescription>{workspace.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <MessageSquare className="mr-1 h-4 w-4" />
-                  {workspace.chatCount} chat{workspace.chatCount !== 1 && "s"}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  Created on{" "}
-                  {workspace.createdAt.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
+                <div className="space-y-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <MessageSquare className="mr-1 h-4 w-4" />
+                    {workspace.chatCount} chat{workspace.chatCount !== 1 && "s"}
+                  </div>
+                  
+                  {workspace.files && workspace.files.length > 0 && (
+                    <div className="mt-3">
+                      <h4 className="text-sm font-medium mb-2">Files ({workspace.files.length})</h4>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        {workspace.files.map((file) => (
+                          <div 
+                            key={file.id} 
+                            className="flex items-center justify-between border p-2 rounded-md text-sm"
+                          >
+                            <div className="flex items-center space-x-2 overflow-hidden">
+                              {getFileIcon(file.type)}
+                              <span className="truncate">{file.name}</span>
+                              <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6"
+                              onClick={() => handleDeleteFile(workspace.id, file.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="text-sm text-muted-foreground">
+                    Created on{" "}
+                    {workspace.createdAt.toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
                 </div>
               </CardContent>
               <CardFooter className="flex gap-2">
@@ -263,8 +457,12 @@ export default function WorkspacePage() {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => {
+                    setSelectedWorkspace(workspace.id);
+                    setFileUploadDialogOpen(true);
+                  }}
                 >
-                  <PlusCircle className="h-4 w-4" />
+                  <FileUp className="h-4 w-4" />
                 </Button>
               </CardFooter>
             </Card>
