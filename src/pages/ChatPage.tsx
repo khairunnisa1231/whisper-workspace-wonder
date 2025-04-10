@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -10,7 +9,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Menu } from "lucide-react";
+import { Loader2, Menu, MessageSquare } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Message {
@@ -51,7 +50,7 @@ export default function ChatPage() {
   
   useEffect(() => {
     // Initialize with some sample data
-    const sampleSessions = [
+    const sampleSessions: ChatSession[] = [
       {
         id: "s1",
         title: "Introduction to ChatWiz",
