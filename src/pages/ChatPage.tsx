@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -5,12 +6,14 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { ChatHistory } from "@/components/ChatHistory";
+import { FileViewer } from "@/components/FileViewer";
 import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Menu, MessageSquare } from "lucide-react";
+import { Loader2, Menu, MessageSquare, File } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 interface Message {
   id: string;
@@ -27,6 +30,14 @@ interface ChatSession {
   messages: Message[];
 }
 
+interface FileItem {
+  id: string;
+  name: string;
+  size: string;
+  type: string;
+  url: string;
+}
+
 export default function ChatPage() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -39,6 +50,24 @@ export default function ChatPage() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
+  const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
+  const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
+  const [files, setFiles] = useState<FileItem[]>([
+    {
+      id: "f1",
+      name: "project-report.pdf",
+      size: "2.4 MB",
+      type: "application/pdf",
+      url: "https://example.com/files/project-report.pdf"
+    },
+    {
+      id: "f2",
+      name: "screenshot.png",
+      size: "1.2 MB",
+      type: "image/png",
+      url: "https://via.placeholder.com/800x600"
+    }
+  ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -250,6 +279,27 @@ export default function ChatPage() {
     setIsSidebarOpen(!isSidebarOpen);
   };
   
+  const toggleFileViewer = () => {
+    if (isFileViewerMinimized) {
+      setIsFileViewerMinimized(false);
+    } else {
+      setIsFileViewerOpen(!isFileViewerOpen);
+    }
+  };
+  
+  const toggleFileViewerMinimize = () => {
+    setIsFileViewerMinimized(!isFileViewerMinimized);
+  };
+  
+  const handleDeleteFile = (fileId: string) => {
+    setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
+    
+    toast({
+      title: "File deleted",
+      description: "The file has been removed from this workspace.",
+    });
+  };
+  
   if (!isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -285,7 +335,7 @@ export default function ChatPage() {
           </div>
         </aside>
         
-        {/* Main Chat Area */}
+        {/* Main Content Area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b p-4">
             <Button
@@ -301,37 +351,75 @@ export default function ChatPage() {
                 ? sessions.find((s) => s.id === activeSessionId)?.title
                 : "New Conversation"}
             </h1>
-            <div className="w-8" /> {/* Spacer for balance */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleFileViewer}
+              className="md:flex items-center justify-center"
+              title="Toggle file viewer"
+            >
+              <File className="h-5 w-5" />
+            </Button>
           </div>
           
-          <ScrollArea className="flex-1 p-4">
-            {messages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-center">
-                <div className="rounded-full bg-primary/10 p-4 mb-4">
-                  <MessageSquare className="h-10 w-10 text-primary" />
-                </div>
-                <h2 className="text-xl font-semibold mb-2">
-                  Start a New Conversation
-                </h2>
-                <p className="text-muted-foreground max-w-md">
-                  Type a message below to start chatting with ChatWiz, your AI-powered
-                  conversation assistant.
-                </p>
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+            <ResizablePanel defaultSize={isFileViewerOpen ? 70 : 100} minSize={40}>
+              <div className="flex flex-col h-full">
+                <ScrollArea className="flex-1 p-4">
+                  {messages.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center text-center">
+                      <div className="rounded-full bg-primary/10 p-4 mb-4">
+                        <MessageSquare className="h-10 w-10 text-primary" />
+                      </div>
+                      <h2 className="text-xl font-semibold mb-2">
+                        Start a New Conversation
+                      </h2>
+                      <p className="text-muted-foreground max-w-md">
+                        Type a message below to start chatting with ChatWiz, your AI-powered
+                        conversation assistant.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {messages.map((message) => (
+                        <ChatMessage key={message.id} message={message} />
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  )}
+                </ScrollArea>
+                <ChatInput
+                  onSendMessage={handleSendMessage}
+                  isProcessing={isProcessing}
+                />
               </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map((message) => (
-                  <ChatMessage key={message.id} message={message} />
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
+            </ResizablePanel>
+            
+            {isFileViewerOpen && !isFileViewerMinimized && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={30} minSize={20}>
+                  <FileViewer 
+                    files={files}
+                    onClose={toggleFileViewer}
+                    onDelete={handleDeleteFile}
+                    isMinimized={isFileViewerMinimized}
+                    onToggleMinimize={toggleFileViewerMinimize}
+                  />
+                </ResizablePanel>
+              </>
             )}
-          </ScrollArea>
+          </ResizablePanelGroup>
           
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            isProcessing={isProcessing}
-          />
+          {isFileViewerMinimized && (
+            <FileViewer 
+              files={files}
+              onClose={toggleFileViewer}
+              onDelete={handleDeleteFile}
+              isMinimized={isFileViewerMinimized}
+              onToggleMinimize={toggleFileViewerMinimize}
+            />
+          )}
         </div>
       </main>
     </div>
