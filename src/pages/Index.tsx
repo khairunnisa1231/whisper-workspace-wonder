@@ -1,4 +1,3 @@
-
 import { useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -18,6 +17,17 @@ import {
   Folder,
   ArrowRight 
 } from "lucide-react";
+import { 
+  Card,
+  CardContent
+} from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const Hero = () => (
   <section className="py-20 md:py-32 relative">
@@ -201,43 +211,101 @@ const Features = () => (
   </section>
 );
 
-const Highlights = () => (
-  <section className="py-16 bg-gradient-to-r from-primary/5 to-secondary/5">
-    <div className="container px-4 md:px-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-sm border">
-          <div className="h-14 w-14 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
-            <Zap className="h-7 w-7 text-secondary" />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            Get responses in milliseconds, no matter how complex your question.
+const Highlights = () => {
+  const highlightsData = [
+    {
+      icon: <Zap className="h-10 w-10 text-secondary" />,
+      title: "Lightning Fast",
+      description: "Get responses in milliseconds, no matter how complex your question.",
+      bgGradient: "from-secondary/10 to-secondary/5"
+    },
+    {
+      icon: <Star className="h-10 w-10 text-primary" />,
+      title: "Top Quality Responses",
+      description: "Trained on premium datasets to deliver accurate, comprehensive answers.",
+      bgGradient: "from-primary/10 to-primary/5"
+    },
+    {
+      icon: <Folder className="h-10 w-10 text-accent2" />,
+      title: "Document Processing",
+      description: "Upload documents for analysis, summarization, and Q&A capabilities.",
+      bgGradient: "from-accent2/10 to-accent2/5"
+    }
+  ];
+
+  return (
+    <section className="py-24 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 h-64 w-64 rounded-full bg-primary/5 blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 h-64 w-64 rounded-full bg-secondary/5 blur-3xl"></div>
+      </div>
+      
+      <div className="container px-4 md:px-6 relative">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+            Powerful AI <span className="gradient-text">Features</span>
+          </h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+            Our AI assistant combines speed, accuracy, and versatility to enhance your productivity
           </p>
         </div>
-        
-        <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-sm border">
-          <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <Star className="h-7 w-7 text-primary" />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Top Quality Responses</h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            Trained on premium datasets to deliver accurate, comprehensive answers.
-          </p>
+
+        {/* Mobile Carousel */}
+        <div className="block md:hidden">
+          <Carousel className="w-full max-w-xs mx-auto">
+            <CarouselContent>
+              {highlightsData.map((item, index) => (
+                <CarouselItem key={index}>
+                  <Card className={`h-full border-none shadow-lg bg-gradient-to-br ${item.bgGradient}`}>
+                    <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
+                      <div className="bg-card p-4 rounded-full shadow-md">{item.icon}</div>
+                      <h3 className="text-xl font-bold">{item.title}</h3>
+                      <p className="text-muted-foreground">{item.description}</p>
+                    </CardContent>
+                  </Card>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <div className="flex justify-center gap-2 mt-4">
+              <CarouselPrevious className="relative static" />
+              <CarouselNext className="relative static" />
+            </div>
+          </Carousel>
         </div>
-        
-        <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-sm border">
-          <div className="h-14 w-14 rounded-full bg-accent2/10 flex items-center justify-center mb-4">
-            <Folder className="h-7 w-7 text-accent2" />
-          </div>
-          <h3 className="text-xl font-bold mb-2">Document Processing</h3>
-          <p className="text-gray-500 dark:text-gray-400">
-            Upload documents for analysis, summarization, and Q&A capabilities.
-          </p>
+
+        {/* Desktop Grid */}
+        <div className="hidden md:grid md:grid-cols-3 gap-8">
+          {highlightsData.map((item, index) => (
+            <div 
+              key={index}
+              className={`rounded-xl p-1 bg-gradient-to-br ${item.bgGradient} group hover:shadow-lg transition-all duration-300 transform hover:scale-105`}
+            >
+              <Card className="h-full border-none bg-card/80 backdrop-blur-sm">
+                <CardContent className="p-8 flex flex-col items-center text-center space-y-4">
+                  <div className="bg-card p-4 rounded-full shadow-md group-hover:shadow-xl transition-all">
+                    {item.icon}
+                  </div>
+                  <h3 className="text-xl font-bold">{item.title}</h3>
+                  <p className="text-muted-foreground">{item.description}</p>
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </div>
+
+        {/* Call to action */}
+        <div className="mt-16 text-center">
+          <Link to="/login?tab=signup">
+            <Button size="lg" className="font-medium">
+              Try It Now <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
