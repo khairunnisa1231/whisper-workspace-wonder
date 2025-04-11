@@ -6,6 +6,33 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, SendHorizonal, FileUp, Mic, SmilePlus, LightbulbIcon } from "lucide-react";
 
+// Add proper TypeScript interface for SpeechRecognition
+interface SpeechRecognitionEvent extends Event {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+}
+
+// Create a global interface to avoid TypeScript errors
+interface Window {
+  SpeechRecognition?: new () => SpeechRecognition;
+  webkitSpeechRecognition?: new () => SpeechRecognition;
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  start(): void;
+  stop(): void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: Event) => void;
+  onend: (event: Event) => void;
+}
+
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onFileUpload?: (file: File) => void;
@@ -69,15 +96,16 @@ export function ChatInput({
   const handleMicToggle = async () => {
     if (!isRecording) {
       try {
-        // Check if browser supports speech recognition
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-          const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        // Fixed speech recognition implementation
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
           const recognition = new SpeechRecognition();
           
           recognition.lang = 'en-US';
           recognition.interimResults = false;
           
-          recognition.onresult = (event) => {
+          recognition.onresult = (event: SpeechRecognitionEvent) => {
             const transcript = event.results[0][0].transcript;
             setMessage((prev) => prev + transcript);
             setIsRecording(false);
@@ -116,7 +144,7 @@ export function ChatInput({
     } else {
       setIsRecording(false);
       // Stop recognition if it's active
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      if ((window as any).speechSynthesis) {
         window.speechSynthesis.cancel();
       }
     }
