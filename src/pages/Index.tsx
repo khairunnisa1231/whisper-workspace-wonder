@@ -1,9 +1,10 @@
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { Toggle } from "@/components/ui/toggle";
 import { 
   MessageSquare, 
   Brain, 
@@ -11,7 +12,10 @@ import {
   Layers, 
   Shield, 
   Clock, 
-  Check, 
+  Check,
+  CircleDollarSign,
+  Star,
+  Folder,
   ArrowRight 
 } from "lucide-react";
 
@@ -51,7 +55,7 @@ const Hero = () => (
             <div className="h-3 w-3 rounded-full bg-red-500"></div>
             <div className="h-3 w-3 rounded-full bg-yellow-500"></div>
             <div className="h-3 w-3 rounded-full bg-green-500"></div>
-            <div className="ml-2 text-sm text-muted-foreground">ChatWiz</div>
+            <div className="ml-2 text-sm text-muted-foreground">Katagrafy.ai</div>
           </div>
         </div>
         <div className="bg-muted p-6 md:p-10 dark:bg-gray-900/90">
@@ -84,6 +88,33 @@ const Hero = () => (
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const TrustedCompanies = () => (
+  <section className="py-12 bg-muted/30">
+    <div className="container px-4 md:px-6">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-semibold">Trusted by Industry Leaders</h2>
+      </div>
+      <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
+        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+          <div className="text-2xl font-bold text-gray-700">Microsoft</div>
+        </div>
+        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+          <div className="text-2xl font-bold text-gray-700">Google</div>
+        </div>
+        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+          <div className="text-2xl font-bold text-gray-700">Amazon</div>
+        </div>
+        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+          <div className="text-2xl font-bold text-gray-700">Intel</div>
+        </div>
+        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+          <div className="text-2xl font-bold text-gray-700">Spotify</div>
         </div>
       </div>
     </div>
@@ -170,118 +201,210 @@ const Features = () => (
   </section>
 );
 
-const Pricing = () => (
-  <section id="pricing" className="py-20">
+const Highlights = () => (
+  <section className="py-16 bg-gradient-to-r from-primary/5 to-secondary/5">
     <div className="container px-4 md:px-6">
-      <div className="flex flex-col items-center justify-center space-y-4 text-center">
-        <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">
-          Pricing
-        </div>
-        <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-          Simple, Transparent Pricing
-        </h2>
-        <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-          Choose the plan that works best for you and start chatting with our AI assistant.
-        </p>
-      </div>
-      
-      <div className="mx-auto grid max-w-4xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 mt-12">
-        {/* Free Plan */}
-        <div className="flex flex-col rounded-lg border shadow-sm">
-          <div className="p-6">
-            <h3 className="text-xl font-bold">Free</h3>
-            <div className="mt-4 text-3xl font-bold">$0</div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Forever free</p>
-            <ul className="mt-6 space-y-3">
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Basic AI conversations</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>5 Workspaces</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Limited history (7 days)</span>
-              </li>
-            </ul>
-            <Link to="/login?tab=signup" className="mt-6 block">
-              <Button variant="outline" className="w-full">
-                Start Free
-              </Button>
-            </Link>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-sm border">
+          <div className="h-14 w-14 rounded-full bg-secondary/10 flex items-center justify-center mb-4">
+            <Zap className="h-7 w-7 text-secondary" />
           </div>
+          <h3 className="text-xl font-bold mb-2">Lightning Fast</h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Get responses in milliseconds, no matter how complex your question.
+          </p>
         </div>
         
-        {/* Premium Plan */}
-        <div className="flex flex-col rounded-lg border border-secondary shadow-sm">
-          <div className="bg-secondary p-2 text-center text-sm font-medium text-secondary-foreground">
-            Most Popular
+        <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-sm border">
+          <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Star className="h-7 w-7 text-primary" />
           </div>
-          <div className="p-6">
-            <h3 className="text-xl font-bold">Premium</h3>
-            <div className="mt-4 text-3xl font-bold">$12</div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Per month</p>
-            <ul className="mt-6 space-y-3">
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Advanced AI capabilities</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Unlimited workspaces</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Unlimited history</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Priority support</span>
-              </li>
-            </ul>
-            <Link to="/login?tab=signup" className="mt-6 block">
-              <Button className="w-full">
-                Get Started
-              </Button>
-            </Link>
-          </div>
+          <h3 className="text-xl font-bold mb-2">Top Quality Responses</h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Trained on premium datasets to deliver accurate, comprehensive answers.
+          </p>
         </div>
         
-        {/* Enterprise Plan */}
-        <div className="flex flex-col rounded-lg border shadow-sm">
-          <div className="p-6">
-            <h3 className="text-xl font-bold">Enterprise</h3>
-            <div className="mt-4 text-3xl font-bold">Custom</div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Contact sales</p>
-            <ul className="mt-6 space-y-3">
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Custom AI model training</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>SSO authentication</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>Dedicated account manager</span>
-              </li>
-              <li className="flex items-center">
-                <Check className="mr-2 h-4 w-4 text-primary" />
-                <span>SLA guarantees</span>
-              </li>
-            </ul>
-            <Button variant="outline" className="mt-6 w-full">
-              Contact Sales
-            </Button>
+        <div className="flex flex-col items-center text-center p-6 rounded-lg bg-card shadow-sm border">
+          <div className="h-14 w-14 rounded-full bg-accent2/10 flex items-center justify-center mb-4">
+            <Folder className="h-7 w-7 text-accent2" />
           </div>
+          <h3 className="text-xl font-bold mb-2">Document Processing</h3>
+          <p className="text-gray-500 dark:text-gray-400">
+            Upload documents for analysis, summarization, and Q&A capabilities.
+          </p>
         </div>
       </div>
     </div>
   </section>
 );
+
+const Pricing = () => {
+  const [isYearly, setIsYearly] = useState(false);
+  
+  const getDiscountedPrice = (monthlyPrice: number) => {
+    const yearlyPrice = monthlyPrice * 12 * 0.85; // 15% discount
+    return (yearlyPrice / 12).toFixed(2);
+  };
+  
+  return (
+    <section id="pricing" className="py-20">
+      <div className="container px-4 md:px-6">
+        <div className="flex flex-col items-center justify-center space-y-4 text-center">
+          <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm text-secondary-foreground">
+            Pricing
+          </div>
+          <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
+            Simple, Transparent Pricing
+          </h2>
+          <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
+            Choose the plan that works best for you and start chatting with our AI assistant.
+          </p>
+          
+          <div className="flex items-center space-x-2 mt-6">
+            <span className={`text-sm font-medium ${!isYearly ? 'text-primary' : 'text-gray-500'}`}>Monthly</span>
+            <Toggle 
+              pressed={isYearly} 
+              onPressedChange={setIsYearly}
+              aria-label="Toggle billing cycle"
+            />
+            <span className={`text-sm font-medium ${isYearly ? 'text-primary' : 'text-gray-500'}`}>
+              Yearly (15% off)
+            </span>
+          </div>
+        </div>
+        
+        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 mt-12">
+          {/* Starter Plan */}
+          <div className="flex flex-col rounded-lg border shadow-sm">
+            <div className="p-6">
+              <h3 className="text-xl font-bold">Starter</h3>
+              <div className="mt-4 text-3xl font-bold">
+                ${isYearly ? getDiscountedPrice(3.99) : '3.99'}
+                <span className="text-sm font-normal text-gray-500">/month</span>
+              </div>
+              {isYearly && (
+                <p className="mt-1 text-sm text-secondary">Save 15% with yearly billing</p>
+              )}
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>100 prompts/month</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>5 documents (25 MB each)</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>Short and Long prompts</span>
+                </li>
+                <li className="flex items-center text-gray-500">
+                  <span className="mr-2">✕</span>
+                  <span>AI Customization</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>Folder Creation</span>
+                </li>
+              </ul>
+              <Link to="/login?tab=signup" className="mt-6 block">
+                <Button variant="outline" className="w-full">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </div>
+          </div>
+          
+          {/* Basic (Recommended) Plan */}
+          <div className="flex flex-col rounded-lg border shadow-lg border-secondary relative">
+            <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-secondary text-white text-sm font-medium rounded-full">
+              Recommended
+            </div>
+            <div className="p-6">
+              <h3 className="text-xl font-bold">Basic</h3>
+              <div className="mt-4 text-3xl font-bold">
+                ${isYearly ? getDiscountedPrice(9.99) : '9.99'}
+                <span className="text-sm font-normal text-gray-500">/month</span>
+              </div>
+              {isYearly && (
+                <p className="mt-1 text-sm text-secondary">Save 15% with yearly billing</p>
+              )}
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>500 prompts/month</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>10 documents (50 MB each)</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>Short and Long prompts</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>AI Customization</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>Folder Creation</span>
+                </li>
+              </ul>
+              <Link to="/login?tab=signup" className="mt-6 block">
+                <Button className="w-full">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </div>
+          </div>
+          
+          {/* Pro Plan */}
+          <div className="flex flex-col rounded-lg border shadow-sm">
+            <div className="p-6">
+              <h3 className="text-xl font-bold">Pro</h3>
+              <div className="mt-4 text-3xl font-bold">
+                ${isYearly ? getDiscountedPrice(19.99) : '19.99'}
+                <span className="text-sm font-normal text-gray-500">/month</span>
+              </div>
+              {isYearly && (
+                <p className="mt-1 text-sm text-secondary">Save 15% with yearly billing</p>
+              )}
+              <ul className="mt-6 space-y-3">
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>1000 prompts/month</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>25 documents (100 MB each)</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>Short and Long prompts</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>AI Customization</span>
+                </li>
+                <li className="flex items-center">
+                  <Check className="mr-2 h-4 w-4 text-primary" />
+                  <span>Folder Creation</span>
+                </li>
+              </ul>
+              <Link to="/login?tab=signup" className="mt-6 block">
+                <Button variant="outline" className="w-full">
+                  Start Free Trial
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
 
 export default function IndexPage() {
   const featuresRef = useRef<HTMLElement | null>(null);
@@ -292,7 +415,9 @@ export default function IndexPage() {
       <Navbar />
       <main className="flex-1">
         <Hero />
+        <TrustedCompanies />
         <Features />
+        <Highlights />
         <Pricing />
       </main>
       <Footer />

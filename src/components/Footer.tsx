@@ -10,7 +10,7 @@ export function Footer() {
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <MessageSquare className="h-6 w-6 text-secondary" />
-              <span className="font-bold text-xl text-primary">ChatWiz</span>
+              <span className="font-bold text-xl text-primary">Katagrafy.ai</span>
             </Link>
             <p className="text-sm text-muted-foreground">
               Your AI powered assistant for smarter, faster conversations.
@@ -68,7 +68,7 @@ export function Footer() {
         
         <div className="mt-12 pt-6 border-t border-border/40 text-center">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} ChatWiz. All rights reserved.
+            © {new Date().getFullYear()} Katagrafy.ai. All rights reserved.
           </p>
         </div>
       </div>
