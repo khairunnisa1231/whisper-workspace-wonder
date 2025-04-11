@@ -15,6 +15,9 @@ export function Footer() {
             <p className="text-sm text-muted-foreground">
               Your AI powered assistant for smarter, faster conversations.
             </p>
+            <p className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} Katagrafy.ai. All rights reserved.
+            </p>
           </div>
           
           <div>
@@ -64,12 +67,6 @@ export function Footer() {
               </li>
             </ul>
           </div>
-        </div>
-        
-        <div className="mt-12 pt-6 border-t border-border/40 text-center">
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Katagrafy.ai. All rights reserved.
-          </p>
         </div>
       </div>
     </footer>

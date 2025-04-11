@@ -4,16 +4,26 @@ import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
-import { WorkspaceSelector } from "@/components/WorkspaceSelector";
-import { ChatHistory } from "@/components/ChatHistory";
+import { ChatSidebar } from "@/components/ChatSidebar";
 import { FileViewer } from "@/components/FileViewer";
 import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Menu, MessageSquare, File } from "lucide-react";
+import { Loader2, MessageSquare, Settings } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { exportChatsToExcel } from "@/utils/exportChats";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Message {
   id: string;
@@ -28,6 +38,7 @@ interface ChatSession {
   lastMessage: string;
   timestamp: Date;
   messages: Message[];
+  isPinned?: boolean;
 }
 
 interface FileItem {
@@ -44,14 +55,23 @@ export default function ChatPage() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
-  const [currentWorkspace, setCurrentWorkspace] = useState("w1");
+  // State for bot customization
+  const [botImageUrl, setBotImageUrl] = useState<string>("");
+  const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
+  
+  // State for sidebar and workspace management
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(!isMobile);
+  const [isSidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
+  const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
+  
+  // Chat state
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile);
-  const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
-  const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
+  
+  // File handling
   const [files, setFiles] = useState<FileItem[]>([
     {
       id: "f1",
@@ -71,6 +91,9 @@ export default function ChatPage() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // Mock user plan
+  const userPlan = "Basic";
+  
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -85,10 +108,11 @@ export default function ChatPage() {
         title: "Introduction to ChatWiz",
         lastMessage: "Let me show you how I can help.",
         timestamp: new Date(),
+        isPinned: true,
         messages: [
           {
             id: "m1",
-            content: "Hello! Welcome to ChatWiz. How can I help you today?",
+            content: "Hello! Welcome to Katagrafy.ai. How can I help you today?",
             role: "assistant",
             timestamp: new Date(),
           },
@@ -111,6 +135,26 @@ export default function ChatPage() {
             content: "I'd be happy to help with your project planning. What kind of project are you working on?",
             role: "assistant",
             timestamp: new Date(Date.now() - 86400000 + 30000),
+          },
+        ],
+      },
+      {
+        id: "s3",
+        title: "Data Analysis Tips",
+        lastMessage: "These techniques will help analyze your data better.",
+        timestamp: new Date(Date.now() - 172800000), // 2 days ago
+        messages: [
+          {
+            id: "m4",
+            content: "What's the best way to analyze this dataset?",
+            role: "user",
+            timestamp: new Date(Date.now() - 172800000),
+          },
+          {
+            id: "m5",
+            content: "For your dataset, I recommend starting with exploratory data analysis. This involves summarizing the main characteristics using statistical methods and visualization techniques.",
+            role: "assistant",
+            timestamp: new Date(Date.now() - 172800000 + 30000),
           },
         ],
       },
@@ -275,8 +319,86 @@ export default function ChatPage() {
     });
   };
   
+  const handlePinSession = (sessionId: string) => {
+    setSessions((prev) =>
+      prev.map((session) => {
+        if (session.id === sessionId) {
+          return {
+            ...session,
+            isPinned: !session.isPinned,
+          };
+        }
+        return session;
+      })
+    );
+    
+    toast({
+      title: sessions.find(s => s.id === sessionId)?.isPinned 
+        ? "Chat unpinned" 
+        : "Chat pinned",
+      description: sessions.find(s => s.id === sessionId)?.isPinned 
+        ? "Chat removed from favorites" 
+        : "Chat added to favorites",
+    });
+  };
+  
+  const handleFileUpload = (file: File) => {
+    const fileId = `f${Date.now()}`;
+    const fileSize = file.size < 1024 
+      ? `${file.size} B`
+      : file.size < 1024 * 1024
+        ? `${(file.size / 1024).toFixed(1)} KB`
+        : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+    
+    const newFile: FileItem = {
+      id: fileId,
+      name: file.name,
+      size: fileSize,
+      type: file.type,
+      url: URL.createObjectURL(file),
+    };
+    
+    setFiles((prev) => [...prev, newFile]);
+    
+    // Open file viewer if it's closed
+    if (!isFileViewerOpen) {
+      setIsFileViewerOpen(true);
+      setIsFileViewerMinimized(false);
+    }
+  };
+  
+  const handleDeleteFile = (fileId: string) => {
+    setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
+    
+    toast({
+      title: "File deleted",
+      description: "The file has been removed from this workspace.",
+    });
+  };
+  
+  const handleExportChats = () => {
+    try {
+      const exportedCount = exportChatsToExcel(sessions);
+      
+      toast({
+        title: "Chats exported successfully",
+        description: `Exported ${exportedCount} recent conversations.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting your chats. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
+    setSidebarOpen(!isSidebarOpen);
+  };
+  
+  const toggleSidebarExpand = () => {
+    setIsSidebarExpanded(!isSidebarExpanded);
   };
   
   const toggleFileViewer = () => {
@@ -289,15 +411,6 @@ export default function ChatPage() {
   
   const toggleFileViewerMinimize = () => {
     setIsFileViewerMinimized(!isFileViewerMinimized);
-  };
-  
-  const handleDeleteFile = (fileId: string) => {
-    setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
-    
-    toast({
-      title: "File deleted",
-      description: "The file has been removed from this workspace.",
-    });
   };
   
   if (!isAuthenticated) {
@@ -315,24 +428,76 @@ export default function ChatPage() {
       <main className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         <aside
-          className={`w-72 border-r bg-card transition-all duration-300 ${
+          className={`${isSidebarExpanded ? 'w-72' : 'w-20'} border-r bg-card transition-all duration-300 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${isMobile ? "absolute z-20 h-[calc(100%-64px)]" : "relative"}`}
         >
-          <div className="flex h-full flex-col">
-            <div className="p-4">
-              <WorkspaceSelector onSelect={setCurrentWorkspace} />
+          {isSidebarExpanded ? (
+            <ChatSidebar
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSelectSession={handleSelectSession}
+              onNewSession={() => handleNewSession()}
+              onDeleteSession={handleDeleteSession}
+              onPinSession={handlePinSession}
+              onExportChats={handleExportChats}
+              userPlan={userPlan}
+              isSidebarExpanded={isSidebarExpanded}
+              onToggleSidebar={toggleSidebarExpand}
+            />
+          ) : (
+            <div className="flex flex-col h-full py-4 items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mb-4"
+                onClick={() => handleNewSession()}
+                title="New Chat"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </Button>
+              
+              <ScrollArea className="flex-1 w-full">
+                <div className="flex flex-col items-center gap-4 px-2">
+                  {sessions.map((session) => (
+                    <Button
+                      key={session.id}
+                      variant={activeSessionId === session.id ? "secondary" : "ghost"}
+                      size="icon"
+                      className="relative"
+                      onClick={() => handleSelectSession(session.id)}
+                      title={session.title}
+                    >
+                      <MessageSquare className="h-5 w-5" />
+                      {session.isPinned && (
+                        <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-yellow-400" />
+                      )}
+                    </Button>
+                  ))}
+                </div>
+              </ScrollArea>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mt-auto mb-2"
+                onClick={toggleSidebarExpand}
+                title="Expand sidebar"
+              >
+                <ArrowRightFromLine className="h-5 w-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="mt-2"
+                onClick={() => setIsBotSettingsOpen(true)}
+                title="Bot settings"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
             </div>
-            <div className="flex-1 overflow-auto">
-              <ChatHistory
-                sessions={sessions}
-                activeSessionId={activeSessionId}
-                onSelectSession={handleSelectSession}
-                onNewSession={() => handleNewSession()}
-                onDeleteSession={handleDeleteSession}
-              />
-            </div>
-          </div>
+          )}
         </aside>
         
         {/* Main Content Area */}
@@ -342,7 +507,7 @@ export default function ChatPage() {
               variant="ghost"
               size="icon"
               onClick={toggleSidebar}
-              className="md:hidden"
+              title="Toggle sidebar"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -351,15 +516,24 @@ export default function ChatPage() {
                 ? sessions.find((s) => s.id === activeSessionId)?.title
                 : "New Conversation"}
             </h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleFileViewer}
-              className="md:flex items-center justify-center"
-              title="Toggle file viewer"
-            >
-              <File className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsBotSettingsOpen(true)}
+                title="Bot settings"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleFileViewer}
+                title="Toggle file viewer"
+              >
+                <File className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
           
           <ResizablePanelGroup direction="horizontal" className="flex-1">
@@ -375,14 +549,18 @@ export default function ChatPage() {
                         Start a New Conversation
                       </h2>
                       <p className="text-muted-foreground max-w-md">
-                        Type a message below to start chatting with ChatWiz, your AI-powered
+                        Type a message below to start chatting with Katagrafy.ai, your AI-powered
                         conversation assistant.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {messages.map((message) => (
-                        <ChatMessage key={message.id} message={message} />
+                        <ChatMessage 
+                          key={message.id} 
+                          message={message} 
+                          botImage={botImageUrl}
+                        />
                       ))}
                       <div ref={messagesEndRef} />
                     </div>
@@ -390,6 +568,7 @@ export default function ChatPage() {
                 </ScrollArea>
                 <ChatInput
                   onSendMessage={handleSendMessage}
+                  onFileUpload={handleFileUpload}
                   isProcessing={isProcessing}
                 />
               </div>
@@ -422,6 +601,66 @@ export default function ChatPage() {
           )}
         </div>
       </main>
+
+      {/* Bot Settings Dialog */}
+      <Dialog open={isBotSettingsOpen} onOpenChange={setIsBotSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Bot Settings</DialogTitle>
+            <DialogDescription>
+              Customize the appearance of your AI assistant
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="bot-image">Bot Profile Image</Label>
+              <Input
+                id="bot-image"
+                placeholder="Enter image URL"
+                value={botImageUrl}
+                onChange={(e) => setBotImageUrl(e.target.value)}
+              />
+              {botImageUrl && (
+                <div className="mt-2 flex justify-center">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden border">
+                    <img 
+                      src={botImageUrl} 
+                      alt="Bot" 
+                      className="w-full h-full object-cover"
+                      onError={() => {
+                        toast({
+                          title: "Image Error",
+                          description: "Failed to load image. Please check the URL.",
+                          variant: "destructive"
+                        });
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBotSettingsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              toast({
+                title: "Settings updated",
+                description: "Bot appearance has been updated successfully."
+              });
+              setIsBotSettingsOpen(false);
+            }}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+import { Menu, ArrowLeftFromLine, ArrowRightFromLine, File } from "lucide-react";
+import { Link } from "react-router-dom";
