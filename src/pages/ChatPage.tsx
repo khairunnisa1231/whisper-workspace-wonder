@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -12,7 +11,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, Settings, Menu, ArrowLeftFromLine, ArrowRightFromLine, File } from "lucide-react";
+import { Loader2, MessageSquare, Settings, Menu, File, ArrowLeftFromLine, ArrowRightFromLine } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { 
@@ -59,7 +58,6 @@ export default function ChatPage() {
   const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
   
   // State for sidebar and workspace management
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(!isMobile);
   const [isSidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
   const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
@@ -69,6 +67,10 @@ export default function ChatPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  // Message selection state
+  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
+  const [selectionMode, setSelectionMode] = useState(false);
   
   // File handling
   const [files, setFiles] = useState<FileItem[]>([
@@ -172,7 +174,16 @@ export default function ChatPage() {
       },
     ];
     
-    setSessions(sampleSessions);
+    // Sort sessions to ensure pinned ones are at the top
+    const sortedSessions = [...sampleSessions].sort((a, b) => {
+      // First compare pinned status (pinned ones go first)
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      // Then sort by timestamp (newest first)
+      return b.timestamp.getTime() - a.timestamp.getTime();
+    });
+    
+    setSessions(sortedSessions);
     setActiveSessionId("s1");
     setMessages(sampleSessions[0].messages);
   }, []);
@@ -190,6 +201,10 @@ export default function ChatPage() {
         setMessages(activeSession.messages);
       }
     }
+    
+    // Clear selected messages when changing sessions
+    setSelectedMessageIds([]);
+    setSelectionMode(false);
   }, [activeSessionId, sessions]);
   
   const handleSendMessage = async (content: string) => {
@@ -292,7 +307,16 @@ export default function ChatPage() {
       messages: newMessages,
     };
     
-    setSessions((prev) => [newSession, ...prev]);
+    // Add new session and sort to keep pinned sessions at top
+    setSessions((prev) => {
+      const updatedSessions = [newSession, ...prev];
+      return updatedSessions.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.timestamp.getTime() - a.timestamp.getTime();
+      });
+    });
+    
     setActiveSessionId(newSessionId);
     setMessages(newMessages);
     
@@ -332,8 +356,9 @@ export default function ChatPage() {
   };
   
   const handlePinSession = (sessionId: string) => {
-    setSessions((prev) =>
-      prev.map((session) => {
+    setSessions((prev) => {
+      // Update pinned status
+      const updatedSessions = prev.map((session) => {
         if (session.id === sessionId) {
           return {
             ...session,
@@ -341,8 +366,15 @@ export default function ChatPage() {
           };
         }
         return session;
-      })
-    );
+      });
+      
+      // Sort to ensure pinned sessions are at the top
+      return updatedSessions.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.timestamp.getTime() - a.timestamp.getTime();
+      });
+    });
     
     toast({
       title: sessions.find(s => s.id === sessionId)?.isPinned 
@@ -352,6 +384,24 @@ export default function ChatPage() {
         ? "Chat removed from favorites" 
         : "Chat added to favorites",
     });
+  };
+  
+  const handleSelectMessage = (messageId: string, selected: boolean) => {
+    setSelectedMessageIds(prev => {
+      if (selected) {
+        return [...prev, messageId];
+      } else {
+        return prev.filter(id => id !== messageId);
+      }
+    });
+  };
+  
+  const toggleSelectionMode = () => {
+    setSelectionMode(prev => !prev);
+    if (selectionMode) {
+      // Clear selections when exiting selection mode
+      setSelectedMessageIds([]);
+    }
   };
   
   const handleFileUpload = (file: File) => {
@@ -538,6 +588,9 @@ export default function ChatPage() {
                   sessionId={activeSession.id}
                   sessionTitle={activeSession.title}
                   messages={activeSession.messages}
+                  selectedMessageIds={selectedMessageIds}
+                  onToggleSelectionMode={toggleSelectionMode}
+                  selectionMode={selectionMode}
                 />
               )}
             </div>
@@ -586,6 +639,9 @@ export default function ChatPage() {
                           key={message.id} 
                           message={message} 
                           botImage={botImageUrl}
+                          isSelected={selectedMessageIds.includes(message.id)}
+                          onSelectMessage={handleSelectMessage}
+                          selectionMode={selectionMode}
                         />
                       ))}
                       <div ref={messagesEndRef} />

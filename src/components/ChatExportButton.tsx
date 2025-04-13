@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
+import { FileDown, FileSpreadsheet, FileText, CheckSquare } from "lucide-react";
 import { exportChatsToExcel } from "@/utils/exportChats";
 
 interface ChatMessage {
@@ -16,10 +16,20 @@ interface ChatMessage {
 interface ChatExportButtonProps {
   sessionId: string;
   sessionTitle: string;
-  messages: Array<{ id: string; content: string; role: string; timestamp: Date }>;
+  messages: Array<ChatMessage>;
+  selectedMessageIds?: string[];
+  onToggleSelectionMode?: () => void;
+  selectionMode?: boolean;
 }
 
-export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExportButtonProps) {
+export function ChatExportButton({ 
+  sessionId, 
+  sessionTitle, 
+  messages, 
+  selectedMessageIds = [], 
+  onToggleSelectionMode,
+  selectionMode = false
+}: ChatExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
   const { toast } = useToast();
   
@@ -27,8 +37,13 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
     try {
       setIsExporting(true);
       
+      // Filter messages if we have selected messages
+      const messagesToExport = selectedMessageIds.length > 0
+        ? messages.filter(msg => selectedMessageIds.includes(msg.id))
+        : messages;
+      
       // Convert chat to plain text for export
-      const chatText = messages.map(msg => {
+      const chatText = messagesToExport.map(msg => {
         const role = msg.role === 'user' ? 'You' : 'Assistant';
         const timestamp = msg.timestamp.toLocaleString();
         return `[${timestamp}] ${role}:\n${msg.content}\n`;
@@ -53,7 +68,9 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
       
       toast({
         title: "Chat Exported as Text",
-        description: "Your conversation has been exported successfully."
+        description: selectedMessageIds.length > 0 
+          ? `${selectedMessageIds.length} selected messages have been exported.`
+          : "Your conversation has been exported successfully."
       });
     } catch (error) {
       toast({
@@ -71,13 +88,18 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
     try {
       setIsExporting(true);
       
-      // Create a chat session object from the current messages
+      // Filter messages if we have selected messages
+      const messagesToExport = selectedMessageIds.length > 0
+        ? messages.filter(msg => selectedMessageIds.includes(msg.id))
+        : messages;
+      
+      // Create a chat session object from the filtered messages
       const chatSession = {
         id: sessionId,
         title: sessionTitle,
-        lastMessage: messages.length > 0 ? messages[messages.length - 1].content : "",
+        lastMessage: messagesToExport.length > 0 ? messagesToExport[messagesToExport.length - 1].content : "",
         timestamp: new Date(),
-        messages: messages.map(msg => ({
+        messages: messagesToExport.map(msg => ({
           id: msg.id,
           content: msg.content,
           // Explicitly cast as either "user" or "assistant" to match ChatMessage type
@@ -91,7 +113,9 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
       
       toast({
         title: "Chat Exported as Excel",
-        description: "Your conversation has been exported as an Excel file."
+        description: selectedMessageIds.length > 0 
+          ? `${selectedMessageIds.length} selected messages have been exported.`
+          : "Your conversation has been exported as an Excel file."
       });
     } catch (error) {
       toast({
@@ -105,13 +129,19 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
     }
   };
   
+  const toggleSelectionMode = () => {
+    if (onToggleSelectionMode) {
+      onToggleSelectionMode();
+    }
+  };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 w-8 p-0 rounded-full"
+          className={cn("h-8 w-8 p-0 rounded-full", selectionMode && "bg-primary text-primary-foreground")}
           disabled={isExporting}
           title="Export this conversation"
         >
@@ -120,11 +150,21 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={exportAsTxt} disabled={isExporting}>
+        <DropdownMenuItem onClick={toggleSelectionMode}>
+          <CheckSquare className="h-4 w-4 mr-2" />
+          <span>{selectionMode ? "Cancel Selection" : "Select Messages"}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={exportAsTxt} 
+          disabled={isExporting || (selectionMode && selectedMessageIds.length === 0)}
+        >
           <FileText className="h-4 w-4 mr-2" />
           <span>Export as Text</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportAsExcel} disabled={isExporting}>
+        <DropdownMenuItem 
+          onClick={exportAsExcel} 
+          disabled={isExporting || (selectionMode && selectedMessageIds.length === 0)}
+        >
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           <span>Export as Excel</span>
         </DropdownMenuItem>
@@ -132,3 +172,6 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
     </DropdownMenu>
   );
 }
+
+// Add the import for cn that we're using
+import { cn } from "@/lib/utils";

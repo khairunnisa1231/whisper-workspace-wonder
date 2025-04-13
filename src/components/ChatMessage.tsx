@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Copy, Check, Volume2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface ChatMessageProps {
   message: {
@@ -14,9 +15,18 @@ interface ChatMessageProps {
     timestamp: Date;
   };
   botImage?: string;
+  isSelected?: boolean;
+  onSelectMessage?: (id: string, selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
-export function ChatMessage({ message, botImage }: ChatMessageProps) {
+export function ChatMessage({ 
+  message, 
+  botImage, 
+  isSelected = false, 
+  onSelectMessage,
+  selectionMode = false
+}: ChatMessageProps) {
   const isUser = message.role === "user";
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
@@ -61,14 +71,31 @@ export function ChatMessage({ message, botImage }: ChatMessageProps) {
       });
     }
   };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    if (onSelectMessage) {
+      onSelectMessage(message.id, checked);
+    }
+  };
   
   return (
     <div
       className={cn(
         "flex w-full gap-3 p-4 group",
-        isUser ? "justify-end" : "justify-start"
+        isUser ? "justify-end" : "justify-start",
+        isSelected && "bg-secondary/20"
       )}
     >
+      {selectionMode && (
+        <div className="flex items-center justify-center">
+          <Checkbox 
+            checked={isSelected}
+            onCheckedChange={handleCheckboxChange}
+            className="mr-2"
+          />
+        </div>
+      )}
+      
       {!isUser && (
         <Avatar className="h-8 w-8">
           {botImage ? (
