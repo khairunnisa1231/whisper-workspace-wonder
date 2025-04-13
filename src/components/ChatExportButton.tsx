@@ -72,7 +72,8 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
         timestamp: new Date(),
         messages: messages.map(msg => ({
           ...msg,
-          role: msg.role === "user" ? "user" : "assistant"
+          // Explicitly cast role to "user" | "assistant" to match ChatMessage type
+          role: msg.role === "user" ? "user" : "assistant" 
         }))
       };
       
