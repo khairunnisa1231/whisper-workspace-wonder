@@ -23,6 +23,7 @@ interface ChatSidebarProps {
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
   onPinSession: (sessionId: string) => void;
+  onExportChats: () => void;
   userPlan: string;
   isSidebarExpanded: boolean;
   onToggleSidebar: () => void;
@@ -36,6 +37,7 @@ export function ChatSidebar({
   onNewSession,
   onDeleteSession,
   onPinSession,
+  onExportChats,
   userPlan,
   isSidebarExpanded,
   onToggleSidebar,

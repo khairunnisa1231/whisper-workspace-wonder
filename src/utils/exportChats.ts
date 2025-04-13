@@ -18,7 +18,7 @@ interface ChatSession {
 }
 
 export const exportChatsToExcel = (sessions: ChatSession[], maxSessions: number = 20) => {
-  // Limit to the most recent 20 sessions
+  // Limit to the most recent sessions based on maxSessions parameter
   const recentSessions = [...sessions]
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, maxSessions);
@@ -37,7 +37,7 @@ export const exportChatsToExcel = (sessions: ChatSession[], maxSessions: number 
       Index: index + 1,
       Role: msg.role.charAt(0).toUpperCase() + msg.role.slice(1),
       Content: msg.content,
-      Timestamp: msg.timestamp.toLocaleString()
+      Timestamp: msg.timestamp instanceof Date ? msg.timestamp.toLocaleString() : new Date(msg.timestamp).toLocaleString()
     }));
     
     // Create worksheet
