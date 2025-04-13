@@ -13,6 +13,7 @@ interface BotImageSelectorProps {
 export function BotImageSelector({ selectedImage, onSelectImage }: BotImageSelectorProps) {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  // Fix: Change the useRef approach to use a regular ref
   const fileInputRef = useState<HTMLInputElement | null>(null);
   
   // Sample bot avatars
@@ -126,16 +127,17 @@ export function BotImageSelector({ selectedImage, onSelectImage }: BotImageSelec
       <div className="flex flex-col items-center gap-2 pt-2">
         <input
           type="file"
-          ref={(ref) => fileInputRef[1] = ref}
+          id="botImageUpload"
           className="hidden"
           accept="image/*"
           onChange={handleImageUpload}
+          ref={(el) => fileInputRef[1](el)}
         />
         
         <Button 
           variant="outline" 
           className="w-full"
-          onClick={() => fileInputRef[1]?.click()}
+          onClick={() => document.getElementById('botImageUpload')?.click()}
           disabled={isUploading}
         >
           {isUploading ? (

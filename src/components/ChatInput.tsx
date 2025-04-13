@@ -176,6 +176,22 @@ export function ChatInput({
       onSubmit={handleSubmit}
       className="flex flex-col border-t bg-background p-4 gap-2"
     >
+      {showSuggestions && (
+        <div className="flex flex-wrap gap-2 mb-3">
+          {recommendedPrompts.slice(0, 4).map((prompt, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              size="sm"
+              className="px-3 py-1 h-auto text-sm rounded-full bg-primary/10 hover:bg-primary/20 border-none" 
+              onClick={() => handlePromptSelect(prompt)}
+            >
+              {prompt}
+            </Button>
+          ))}
+        </div>
+      )}
+      
       <div className="flex items-center gap-2 mb-1">
         <input 
           type="file" 
@@ -241,14 +257,14 @@ export function ChatInput({
               variant="ghost"
               size="icon"
               className="h-8 w-8 rounded-full"
-              title="Suggested prompts"
+              title="More suggestions"
             >
               <LightbulbIcon className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-72 p-2">
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Suggested prompts:</p>
+              <p className="text-sm font-medium">More suggestions:</p>
               {recommendedPrompts.map((prompt, index) => (
                 <Button
                   key={index}
@@ -291,22 +307,6 @@ export function ChatInput({
             )}
           </Button>
         </div>
-        
-        {showSuggestions && (
-          <div className="flex flex-wrap gap-2 mt-1">
-            {recommendedPrompts.slice(0, 3).map((prompt, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                className="text-xs truncate max-w-[200px]"
-                onClick={() => handlePromptSelect(prompt)}
-              >
-                {prompt}
-              </Button>
-            ))}
-          </div>
-        )}
       </div>
     </form>
   );
