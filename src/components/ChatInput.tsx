@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -48,16 +48,27 @@ export function ChatInput({
     "Explain the concept of...",
     "Summarize this document for me.",
     "Generate a list of ideas for...",
-    "How can I improve my..."
+    "How can I improve my...",
+    "Compare and contrast...",
+    "Create a plan for...",
+    "What's your opinion on...",
+    "Help me debug this code..."
   ]
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   
   // Common emojis for quick access
   const commonEmojis = ["👍", "👎", "😊", "🙏", "🔥", "👀", "❤️", "🚀", "🎉", "🤔"];
+  
+  // Show suggestions when the input is empty
+  useEffect(() => {
+    setShowSuggestions(!message.trim());
+  }, [message]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +102,9 @@ export function ChatInput({
   
   const handleEmojiClick = (emoji: string) => {
     setMessage((prev) => prev + emoji);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
   
   const handleMicToggle = async () => {
@@ -152,6 +166,9 @@ export function ChatInput({
   
   const handlePromptSelect = (prompt: string) => {
     setMessage(prompt);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
   };
   
   return (
@@ -247,28 +264,49 @@ export function ChatInput({
         </Popover>
       </div>
       
-      <div className="flex items-end gap-2">
-        <Textarea
-          placeholder="Type your message here..."
-          className="min-h-[60px] resize-none"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={isProcessing}
-        />
+      <div className="flex flex-col gap-2">
+        <div className="relative">
+          <Textarea
+            ref={textareaRef}
+            placeholder="Type your message here..."
+            className="min-h-[60px] resize-none pr-[60px]"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={isProcessing}
+            onFocus={() => setShowSuggestions(false)}
+            onBlur={() => setShowSuggestions(!message.trim())}
+          />
+          
+          <Button
+            type="submit"
+            size="icon"
+            className="absolute right-2 bottom-2 h-10 w-10"
+            disabled={!message.trim() || isProcessing}
+          >
+            {isProcessing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <SendHorizonal className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         
-        <Button
-          type="submit"
-          size="icon"
-          className="h-[60px] w-[60px]"
-          disabled={!message.trim() || isProcessing}
-        >
-          {isProcessing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <SendHorizonal className="h-4 w-4" />
-          )}
-        </Button>
+        {showSuggestions && (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {recommendedPrompts.slice(0, 3).map((prompt, index) => (
+              <Button
+                key={index}
+                variant="outline"
+                size="sm"
+                className="text-xs truncate max-w-[200px]"
+                onClick={() => handlePromptSelect(prompt)}
+              >
+                {prompt}
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
     </form>
   );

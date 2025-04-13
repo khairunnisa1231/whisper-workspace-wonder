@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PlusCircle, MessageSquare, Trash2, Star, ArrowLeftFromLine, ArrowRightFromLine, FileDown, Copyright } from "lucide-react";
+import { PlusCircle, MessageSquare, Trash2, Star, ArrowLeftFromLine, ArrowRightFromLine, Copyright } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WorkspaceSelector } from "./WorkspaceSelector";
 
 interface ChatSession {
   id: string;
@@ -26,6 +27,7 @@ interface ChatSidebarProps {
   userPlan: string;
   isSidebarExpanded: boolean;
   onToggleSidebar: () => void;
+  promptsRemaining?: number;
 }
 
 export function ChatSidebar({
@@ -39,6 +41,7 @@ export function ChatSidebar({
   userPlan,
   isSidebarExpanded,
   onToggleSidebar,
+  promptsRemaining = 100,
 }: ChatSidebarProps) {
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
   
@@ -52,39 +55,38 @@ export function ChatSidebar({
     return b.timestamp.getTime() - a.timestamp.getTime();
   });
   
+  const handleWorkspaceSelect = (workspaceId: string) => {
+    console.log("Selected workspace: ", workspaceId);
+    // In a real app, you would filter chats by workspace
+  };
+  
   return (
     <div className="flex flex-col h-full border-r bg-card">
-      <div className="p-4 flex justify-between items-center border-b">
+      <div className="p-4 flex flex-col gap-3 border-b">
+        <WorkspaceSelector onSelect={handleWorkspaceSelect} />
+        
         <Button 
           onClick={onNewSession}
-          className="flex-1 flex items-center gap-2"
+          className="w-full flex items-center gap-2"
         >
           <PlusCircle className="h-4 w-4" />
           New Chat
         </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="ml-2"
-          onClick={onToggleSidebar}
-          title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-        >
-          {isSidebarExpanded ? <ArrowLeftFromLine className="h-4 w-4" /> : <ArrowRightFromLine className="h-4 w-4" />}
-        </Button>
+        
+        <div className="flex items-center justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleSidebar}
+            title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {isSidebarExpanded ? <ArrowLeftFromLine className="h-4 w-4" /> : <ArrowRightFromLine className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
       
-      <div className="p-4 flex justify-between items-center">
+      <div className="p-4">
         <h3 className="text-sm font-medium">Recent Conversations</h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          className="h-8 px-2 text-xs" 
-          onClick={onExportChats}
-          title="Export recent chats"
-        >
-          <FileDown className="h-4 w-4 mr-1" />
-          Export
-        </Button>
       </div>
       
       <ScrollArea className="flex-1 px-4">
@@ -181,6 +183,18 @@ export function ChatSidebar({
           <div className="flex justify-between items-center mb-2">
             <h4 className="text-sm font-medium">Current Plan</h4>
             <Badge variant="outline" className="text-xs">{userPlan}</Badge>
+          </div>
+          <div className="mb-3">
+            <div className="flex justify-between text-xs mb-1">
+              <span>Usage this month</span>
+              <span className="font-medium">{promptsRemaining} prompts left</span>
+            </div>
+            <div className="w-full h-2 bg-background rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary rounded-full" 
+                style={{ width: `${Math.min(100 - (promptsRemaining / 150 * 100), 100)}%` }}
+              ></div>
+            </div>
           </div>
           <Link to="/pricing">
             <Button size="sm" className="w-full">

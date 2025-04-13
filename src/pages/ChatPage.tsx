@@ -5,14 +5,15 @@ import { Navbar } from "@/components/Navbar";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
 import { ChatSidebar } from "@/components/ChatSidebar";
+import { ChatExportButton } from "@/components/ChatExportButton";
 import { FileViewer } from "@/components/FileViewer";
+import { BotImageSelector } from "@/components/BotImageSelector";
 import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, Settings } from "lucide-react";
+import { Loader2, MessageSquare, Settings, Menu, ArrowLeftFromLine, ArrowRightFromLine, File } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { exportChatsToExcel } from "@/utils/exportChats";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { 
   Dialog, 
@@ -22,8 +23,6 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 interface Message {
   id: string;
@@ -56,7 +55,7 @@ export default function ChatPage() {
   const { toast } = useToast();
   
   // State for bot customization
-  const [botImageUrl, setBotImageUrl] = useState<string>("");
+  const [botImageUrl, setBotImageUrl] = useState<string | null>(null);
   const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
   
   // State for sidebar and workspace management
@@ -93,6 +92,19 @@ export default function ChatPage() {
   
   // Mock user plan
   const userPlan = "Basic";
+  const promptsRemaining = 85; // For the usage display
+  
+  // Prompt recommendations
+  const recommendedPrompts = [
+    "Help me draft an email to my boss",
+    "Explain machine learning concepts to a beginner",
+    "Write a blog post about productivity tips",
+    "Create a workout plan for beginners",
+    "Suggest 5 books to read this summer",
+    "Generate ideas for my marketing campaign",
+    "Help me troubleshoot my code",
+    "Write a story about a space traveler"
+  ];
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -378,11 +390,9 @@ export default function ChatPage() {
   
   const handleExportChats = () => {
     try {
-      const exportedCount = exportChatsToExcel(sessions);
-      
       toast({
-        title: "Chats exported successfully",
-        description: `Exported ${exportedCount} recent conversations.`,
+        title: "Exporting all chats",
+        description: "Your conversations are being exported.",
       });
     } catch (error) {
       toast({
@@ -412,6 +422,9 @@ export default function ChatPage() {
   const toggleFileViewerMinimize = () => {
     setIsFileViewerMinimized(!isFileViewerMinimized);
   };
+  
+  // Get current active session for export button
+  const activeSession = sessions.find(s => s.id === activeSessionId);
   
   if (!isAuthenticated) {
     return (
@@ -444,6 +457,7 @@ export default function ChatPage() {
               userPlan={userPlan}
               isSidebarExpanded={isSidebarExpanded}
               onToggleSidebar={toggleSidebarExpand}
+              promptsRemaining={promptsRemaining}
             />
           ) : (
             <div className="flex flex-col h-full py-4 items-center">
@@ -511,11 +525,23 @@ export default function ChatPage() {
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-lg font-semibold">
-              {activeSessionId 
-                ? sessions.find((s) => s.id === activeSessionId)?.title
-                : "New Conversation"}
-            </h1>
+            
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-semibold">
+                {activeSessionId 
+                  ? sessions.find((s) => s.id === activeSessionId)?.title
+                  : "New Conversation"}
+              </h1>
+              
+              {activeSession && (
+                <ChatExportButton 
+                  sessionId={activeSession.id}
+                  sessionTitle={activeSession.title}
+                  messages={activeSession.messages}
+                />
+              )}
+            </div>
+            
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -570,6 +596,7 @@ export default function ChatPage() {
                   onSendMessage={handleSendMessage}
                   onFileUpload={handleFileUpload}
                   isProcessing={isProcessing}
+                  recommendedPrompts={recommendedPrompts}
                 />
               </div>
             </ResizablePanel>
@@ -614,31 +641,10 @@ export default function ChatPage() {
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="bot-image">Bot Profile Image</Label>
-              <Input
-                id="bot-image"
-                placeholder="Enter image URL"
-                value={botImageUrl}
-                onChange={(e) => setBotImageUrl(e.target.value)}
+              <BotImageSelector 
+                selectedImage={botImageUrl} 
+                onSelectImage={setBotImageUrl} 
               />
-              {botImageUrl && (
-                <div className="mt-2 flex justify-center">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden border">
-                    <img 
-                      src={botImageUrl} 
-                      alt="Bot" 
-                      className="w-full h-full object-cover"
-                      onError={() => {
-                        toast({
-                          title: "Image Error",
-                          description: "Failed to load image. Please check the URL.",
-                          variant: "destructive"
-                        });
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
           </div>
           
@@ -661,6 +667,3 @@ export default function ChatPage() {
     </div>
   );
 }
-
-import { Menu, ArrowLeftFromLine, ArrowRightFromLine, File } from "lucide-react";
-import { Link } from "react-router-dom";
