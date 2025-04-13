@@ -6,6 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 import { FileDown, FileSpreadsheet, FileText } from "lucide-react";
 import { exportChatsToExcel } from "@/utils/exportChats";
 
+interface ChatMessage {
+  id: string;
+  content: string;
+  role: "user" | "assistant";
+  timestamp: Date;
+}
+
 interface ChatExportButtonProps {
   sessionId: string;
   sessionTitle: string;
@@ -71,9 +78,11 @@ export function ChatExportButton({ sessionId, sessionTitle, messages }: ChatExpo
         lastMessage: messages.length > 0 ? messages[messages.length - 1].content : "",
         timestamp: new Date(),
         messages: messages.map(msg => ({
-          ...msg,
-          // Explicitly cast role to "user" | "assistant" to match ChatMessage type
-          role: msg.role === "user" ? "user" : "assistant" 
+          id: msg.id,
+          content: msg.content,
+          // Explicitly cast as either "user" or "assistant" to match ChatMessage type
+          role: msg.role === "user" ? "user" as const : "assistant" as const,
+          timestamp: msg.timestamp
         }))
       };
       

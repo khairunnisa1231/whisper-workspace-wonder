@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { PlusCircle, MessageSquare, Trash2, Star, ArrowLeftFromLine, ArrowRightFromLine, Copyright } from "lucide-react";
+import { PlusCircle, MessageSquare, Trash2, Star, Copyright } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { WorkspaceSelector } from "./WorkspaceSelector";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Link } from "react-router-dom";
 
 interface ChatSession {
   id: string;
@@ -25,8 +28,6 @@ interface ChatSidebarProps {
   onPinSession: (sessionId: string) => void;
   onExportChats: () => void;
   userPlan: string;
-  isSidebarExpanded: boolean;
-  onToggleSidebar: () => void;
   promptsRemaining?: number;
 }
 
@@ -39,11 +40,11 @@ export function ChatSidebar({
   onPinSession,
   onExportChats,
   userPlan,
-  isSidebarExpanded,
-  onToggleSidebar,
   promptsRemaining = 100,
 }: ChatSidebarProps) {
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [selectedChats, setSelectedChats] = useState<string[]>([]);
   
   // Group and sort chats - pinned first, then by date
   const sortedSessions = [...sessions].sort((a, b) => {
@@ -60,6 +61,26 @@ export function ChatSidebar({
     // In a real app, you would filter chats by workspace
   };
   
+  const handleExport = () => {
+    // Filter only selected sessions for export
+    const sessionsToExport = sessions.filter(session => selectedChats.includes(session.id));
+    
+    // Implement export functionality here
+    console.log("Exporting selected chats:", sessionsToExport);
+    
+    // Close dialog and reset selections
+    setIsExportDialogOpen(false);
+    setSelectedChats([]);
+  };
+  
+  const toggleChatSelection = (sessionId: string) => {
+    setSelectedChats(prev => 
+      prev.includes(sessionId) 
+        ? prev.filter(id => id !== sessionId) 
+        : [...prev, sessionId]
+    );
+  };
+  
   return (
     <div className="flex flex-col h-full border-r bg-card">
       <div className="p-4 flex flex-col gap-3 border-b">
@@ -73,14 +94,14 @@ export function ChatSidebar({
           New Chat
         </Button>
         
-        <div className="flex items-center justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggleSidebar}
-            title={isSidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
+        <div className="flex justify-between">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1 mr-1"
+            onClick={() => setIsExportDialogOpen(true)}
           >
-            {isSidebarExpanded ? <ArrowLeftFromLine className="h-4 w-4" /> : <ArrowRightFromLine className="h-4 w-4" />}
+            Export Chats
           </Button>
         </div>
       </div>
@@ -208,8 +229,51 @@ export function ChatSidebar({
           <span>{new Date().getFullYear()} Katagrafy.ai</span>
         </div>
       </div>
+      
+      {/* Export Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Export Chats</DialogTitle>
+            <DialogDescription>
+              Select the conversations you want to export
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="max-h-[300px] overflow-y-auto">
+            {sessions.map(session => (
+              <div key={session.id} className="flex items-center space-x-2 py-2 border-b">
+                <Checkbox 
+                  id={`chat-${session.id}`}
+                  checked={selectedChats.includes(session.id)}
+                  onCheckedChange={() => toggleChatSelection(session.id)}
+                />
+                <label 
+                  htmlFor={`chat-${session.id}`} 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1"
+                >
+                  {session.title}
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                    {session.lastMessage}
+                  </p>
+                </label>
+              </div>
+            ))}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleExport}
+              disabled={selectedChats.length === 0}
+            >
+              Export Selected
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-import { Link } from "react-router-dom";
