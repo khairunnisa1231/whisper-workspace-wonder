@@ -11,6 +11,8 @@ import Login from "./pages/Login";
 import ChatPage from "./pages/ChatPage";
 import WorkspacePage from "./pages/WorkspacePage";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -30,6 +32,8 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/workspace" element={<WorkspacePage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
