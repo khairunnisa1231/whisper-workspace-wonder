@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -59,6 +60,7 @@ export default function ChatPage() {
   
   // State for sidebar and workspace management
   const [isSidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // Add missing state variable
   const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
   const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
   
@@ -505,7 +507,6 @@ export default function ChatPage() {
               onPinSession={handlePinSession}
               onExportChats={handleExportChats}
               userPlan={userPlan}
-              isSidebarExpanded={isSidebarExpanded}
               onToggleSidebar={toggleSidebarExpand}
               promptsRemaining={promptsRemaining}
             />

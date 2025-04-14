@@ -29,6 +29,7 @@ interface ChatSidebarProps {
   onExportChats: () => void;
   userPlan: string;
   promptsRemaining?: number;
+  onToggleSidebar?: () => void;
 }
 
 export function ChatSidebar({
@@ -41,6 +42,7 @@ export function ChatSidebar({
   onExportChats,
   userPlan,
   promptsRemaining = 100,
+  onToggleSidebar
 }: ChatSidebarProps) {
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
