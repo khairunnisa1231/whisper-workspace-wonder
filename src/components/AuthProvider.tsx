@@ -1,55 +1,93 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import { supabase, type Profile } from "@/lib/supabase";
 
 interface AuthContextType {
-  user: User | null;
+  user: Profile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in from localStorage (simulating auth)
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    // Check current auth status
+    const checkAuth = async () => {
+      try {
+        setLoading(true);
+        
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Get user profile data
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setUser(profile);
+            setIsAuthenticated(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // Get user profile after sign in
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setUser(profile);
+            setIsAuthenticated(true);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    );
+
+    // Cleanup subscription
+    return () => {
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulate login API call
     setLoading(true);
     try {
-      // In a real app, this would call your authentication API
-      // For now, we'll simulate a successful login with mock data
-      const mockUser = {
-        id: "user-123",
+      const { error } = await supabase.auth.signInWithPassword({
         email,
-        name: email.split("@")[0],
-      };
+        password,
+      });
       
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(mockUser));
+      if (error) throw error;
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error('Login failed:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -57,31 +95,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    // Simulate signup API call
     setLoading(true);
     try {
-      // In a real app, this would call your authentication API
-      const mockUser = {
-        id: "user-" + Date.now(),
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({
         email,
-        name,
-      };
+        password,
+      });
       
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(mockUser));
+      if (error) throw error;
+      
+      if (data.user) {
+        // Create a profile for the new user
+        await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          name,
+        });
+      }
     } catch (error) {
-      console.error("Signup failed:", error);
+      console.error('Signup failed:', error);
       throw error;
     } finally {
       setLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   return (
