@@ -13,6 +13,7 @@ import WorkspacePage from "./pages/WorkspacePage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import { MobileNavBar } from "@/components/MobileNavBar";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <MobileNavBar />
             </BrowserRouter>
           </TooltipProvider>
         </AuthProvider>

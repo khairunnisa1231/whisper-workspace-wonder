@@ -94,4 +94,39 @@
   .chat-container {
     height: calc(100vh - 75px);
   }
+
+  /* Mobile Platform Styles */
+  [data-platform="mobile"] .desktop-only {
+    @apply hidden;
+  }
+
+  [data-platform="web"] .mobile-only {
+    @apply hidden;
+  }
+
+  [data-platform="mobile"] {
+    max-width: 480px;
+    margin: 0 auto;
+    @apply touch-pan-y;
+  }
+
+  [data-platform="mobile"] .chat-container {
+    height: calc(100vh - 130px);
+  }
+
+  [data-platform="mobile"] header {
+    @apply shadow-sm;
+  }
+  
+  [data-platform="mobile"] .btn-mobile {
+    @apply rounded-full flex items-center justify-center;
+  }
+  
+  [data-platform="mobile"] .mobile-nav-bar {
+    @apply fixed bottom-0 left-0 right-0 flex justify-around py-2 bg-background border-t border-border/40 z-50;
+  }
+  
+  [data-platform="mobile"] .mobile-tab {
+    @apply flex flex-col items-center justify-center p-2 text-xs;
+  }
 }
