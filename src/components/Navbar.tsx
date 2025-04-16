@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
 import { Menu, X, MessageSquare } from "lucide-react";
-import { PlatformToggle } from "@/components/PlatformToggle";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -31,11 +30,6 @@ export function Navbar() {
           <MessageSquare className="h-6 w-6 text-secondary" />
           <span className="font-bold text-xl text-primary">Katagrafy.ai</span>
         </Link>
-        
-        {/* Platform Toggle */}
-        <div className="md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
-          <PlatformToggle />
-        </div>
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex md:flex-1 md:justify-center">
