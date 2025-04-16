@@ -6,7 +6,16 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a dummy client if URL is not available to prevent runtime errors
+// This allows the app to at least load and show a configuration message
+export const supabase = supabaseUrl 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : createClient('https://placeholder-url.supabase.co', 'placeholder-key', {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    });
 
 // Database schema types
 export type Profile = {
