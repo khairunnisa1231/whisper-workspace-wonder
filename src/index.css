@@ -95,38 +95,34 @@
     height: calc(100vh - 75px);
   }
 
-  /* Mobile Platform Styles */
-  [data-platform="mobile"] .desktop-only {
-    @apply hidden;
-  }
-
-  [data-platform="web"] .mobile-only {
-    @apply hidden;
-  }
-
-  [data-platform="mobile"] {
-    max-width: 480px;
-    margin: 0 auto;
-    @apply touch-pan-y;
-  }
-
-  [data-platform="mobile"] .chat-container {
-    height: calc(100vh - 130px);
-  }
-
-  [data-platform="mobile"] header {
-    @apply shadow-sm;
+  /* Mobile App Styles */
+  .mobile-nav-bar {
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   }
   
-  [data-platform="mobile"] .btn-mobile {
-    @apply rounded-full flex items-center justify-center;
-  }
-  
-  [data-platform="mobile"] .mobile-nav-bar {
-    @apply fixed bottom-0 left-0 right-0 flex justify-around py-2 bg-background border-t border-border/40 z-50;
-  }
-  
-  [data-platform="mobile"] .mobile-tab {
+  .mobile-tab {
     @apply flex flex-col items-center justify-center p-2 text-xs;
+  }
+  
+  /* For native look and feel */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      /* Disable rubber-band effect on iOS */
+      overscroll-behavior-y: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    input, textarea, button {
+      -webkit-appearance: none;
+      border-radius: var(--radius);
+    }
+    
+    .safe-area-inset-bottom {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .safe-area-inset-top {
+      padding-top: env(safe-area-inset-top);
+    }
   }
 }
