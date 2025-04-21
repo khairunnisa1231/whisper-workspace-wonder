@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -23,6 +22,8 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import { askGemini } from "@/integrations/gemini/client";
+import { readFileContent } from "@/utils/readFileContent";
 
 interface Message {
   id: string;
@@ -54,27 +55,22 @@ export default function ChatPage() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   
-  // State for bot customization
   const [botImageUrl, setBotImageUrl] = useState<string | null>(null);
   const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
   
-  // State for sidebar and workspace management
   const [isSidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true); // Add missing state variable
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
   const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
   
-  // Chat state
   const [isProcessing, setIsProcessing] = useState(false);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   
-  // Message selection state
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
   
-  // File handling
   const [files, setFiles] = useState<FileItem[]>([
     {
       id: "f1",
@@ -94,11 +90,9 @@ export default function ChatPage() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Mock user plan
   const userPlan = "Basic";
-  const promptsRemaining = 85; // For the usage display
+  const promptsRemaining = 85;
   
-  // Prompt recommendations
   const recommendedPrompts = [
     "Help me draft an email to my boss",
     "Explain machine learning concepts to a beginner",
@@ -117,7 +111,6 @@ export default function ChatPage() {
   }, [isAuthenticated, navigate]);
   
   useEffect(() => {
-    // Initialize with some sample data
     const sampleSessions: ChatSession[] = [
       {
         id: "s1",
@@ -138,7 +131,7 @@ export default function ChatPage() {
         id: "s2",
         title: "Project Planning",
         lastMessage: "I'll help you outline your project.",
-        timestamp: new Date(Date.now() - 86400000), // 1 day ago
+        timestamp: new Date(Date.now() - 86400000),
         messages: [
           {
             id: "m2",
@@ -158,7 +151,7 @@ export default function ChatPage() {
         id: "s3",
         title: "Data Analysis Tips",
         lastMessage: "These techniques will help analyze your data better.",
-        timestamp: new Date(Date.now() - 172800000), // 2 days ago
+        timestamp: new Date(Date.now() - 172800000),
         messages: [
           {
             id: "m4",
@@ -176,12 +169,9 @@ export default function ChatPage() {
       },
     ];
     
-    // Sort sessions to ensure pinned ones are at the top
     const sortedSessions = [...sampleSessions].sort((a, b) => {
-      // First compare pinned status (pinned ones go first)
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      // Then sort by timestamp (newest first)
       return b.timestamp.getTime() - a.timestamp.getTime();
     });
     
@@ -191,12 +181,10 @@ export default function ChatPage() {
   }, []);
   
   useEffect(() => {
-    // Scroll to bottom on new messages
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
   useEffect(() => {
-    // Update messages when active session changes
     if (activeSessionId) {
       const activeSession = sessions.find((s) => s.id === activeSessionId);
       if (activeSession) {
@@ -204,83 +192,72 @@ export default function ChatPage() {
       }
     }
     
-    // Clear selected messages when changing sessions
     setSelectedMessageIds([]);
     setSelectionMode(false);
   }, [activeSessionId, sessions]);
   
   const handleSendMessage = async (content: string) => {
     if (!activeSessionId) {
-      // Create a new session if none is active
       handleNewSession(content);
       return;
     }
-    
+
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content,
       role: "user",
       timestamp: new Date(),
     };
-    
-    // Update messages state
+
     setMessages((prev) => [...prev, userMessage]);
-    
-    // Update sessions with the new message
+
     setSessions((prev) =>
-      prev.map((session) => {
-        if (session.id === activeSessionId) {
-          return {
-            ...session,
-            lastMessage: content,
-            timestamp: new Date(),
-            messages: [...session.messages, userMessage],
-          };
-        }
-        return session;
-      })
+      prev.map((session) => session.id === activeSessionId
+        ? { ...session, lastMessage: content, timestamp: new Date(), messages: [...session.messages, userMessage] }
+        : session
+      )
     );
-    
-    // Simulate AI response
+
     setIsProcessing(true);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      const botResponses = [
-        "I understand what you're looking for. Let me help you with that.",
-        "That's an interesting question. Here's what I think about it.",
-        "I can definitely assist with that request.",
-        "Let me process that and provide you with a helpful response.",
-        "I've analyzed your question and here's what I found.",
-      ];
-      
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
-      
+
+    try {
+      let prompt = content;
+      if (files.length > 0) {
+        const fileTexts = [];
+        for (let file of files.slice(0, 2)) {
+          fileTexts.push(`User uploaded file: ${file.name} (${file.type}), URL: ${file.url}`);
+        }
+        prompt += "\n\n[Context: The following files are uploaded by the user:]\n" + fileTexts.join("\n");
+      }
+
+      const answer = await askGemini(prompt);
+
       const aiMessage: Message = {
         id: `ai-${Date.now()}`,
-        content: randomResponse,
+        content: answer,
         role: "assistant",
         timestamp: new Date(),
       };
-      
+
       setMessages((prev) => [...prev, aiMessage]);
-      
       setSessions((prev) =>
-        prev.map((session) => {
-          if (session.id === activeSessionId) {
-            return {
-              ...session,
-              messages: [...session.messages, userMessage, aiMessage],
-            };
-          }
-          return session;
-        })
+        prev.map((session) =>
+          session.id === activeSessionId
+            ? { ...session, messages: [...session.messages, userMessage, aiMessage] }
+            : session
+        )
       );
-      
+    } catch (error: any) {
+      toast({
+        title: "Gemini Error",
+        description: error?.message || "Failed to get a response from Gemini AI.",
+        variant: "destructive"
+      });
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
-  
+
   const handleNewSession = (initialMessage?: string) => {
     const newSessionId = `s${Date.now()}`;
     
@@ -297,7 +274,6 @@ export default function ChatPage() {
       
       newMessages = [userMessage];
       
-      // Use first few words of user message as session title
       sessionTitle = initialMessage.split(" ").slice(0, 3).join(" ") + "...";
     }
     
@@ -309,7 +285,6 @@ export default function ChatPage() {
       messages: newMessages,
     };
     
-    // Add new session and sort to keep pinned sessions at top
     setSessions((prev) => {
       const updatedSessions = [newSession, ...prev];
       return updatedSessions.sort((a, b) => {
@@ -323,11 +298,10 @@ export default function ChatPage() {
     setMessages(newMessages);
     
     if (initialMessage) {
-      // If there was an initial message, simulate a response
       handleSendMessage(initialMessage);
     }
   };
-  
+
   const handleSelectSession = (sessionId: string) => {
     setActiveSessionId(sessionId);
     const session = sessions.find((s) => s.id === sessionId);
@@ -335,12 +309,11 @@ export default function ChatPage() {
       setMessages(session.messages);
     }
   };
-  
+
   const handleDeleteSession = (sessionId: string) => {
     setSessions((prev) => prev.filter((session) => session.id !== sessionId));
     
     if (activeSessionId === sessionId) {
-      // If we deleted the active session, set to the first available or null
       const remainingSessions = sessions.filter((s) => s.id !== sessionId);
       if (remainingSessions.length > 0) {
         setActiveSessionId(remainingSessions[0].id);
@@ -356,10 +329,9 @@ export default function ChatPage() {
       description: "The chat has been removed from your history.",
     });
   };
-  
+
   const handlePinSession = (sessionId: string) => {
     setSessions((prev) => {
-      // Update pinned status
       const updatedSessions = prev.map((session) => {
         if (session.id === sessionId) {
           return {
@@ -370,7 +342,6 @@ export default function ChatPage() {
         return session;
       });
       
-      // Sort to ensure pinned sessions are at the top
       return updatedSessions.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
@@ -387,7 +358,7 @@ export default function ChatPage() {
         : "Chat added to favorites",
     });
   };
-  
+
   const handleSelectMessage = (messageId: string, selected: boolean) => {
     setSelectedMessageIds(prev => {
       if (selected) {
@@ -397,23 +368,36 @@ export default function ChatPage() {
       }
     });
   };
-  
+
   const toggleSelectionMode = () => {
     setSelectionMode(prev => !prev);
     if (selectionMode) {
-      // Clear selections when exiting selection mode
       setSelectedMessageIds([]);
     }
   };
-  
-  const handleFileUpload = (file: File) => {
+
+  const handleFileUpload = async (file: File) => {
     const fileId = `f${Date.now()}`;
     const fileSize = file.size < 1024 
       ? `${file.size} B`
       : file.size < 1024 * 1024
         ? `${(file.size / 1024).toFixed(1)} KB`
         : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
-    
+
+    let previewContent = "";
+    try {
+      const content = await readFileContent(file);
+      if (content && content.length < 1800) {
+        previewContent = content;
+      } else if (content) {
+        previewContent = content.slice(0, 1800) + '...';
+      } else {
+        previewContent = "(File uploaded, but no text preview available)";
+      }
+    } catch {
+      previewContent = "(Could not read file content)";
+    }
+
     const newFile: FileItem = {
       id: fileId,
       name: file.name,
@@ -421,16 +405,14 @@ export default function ChatPage() {
       type: file.type,
       url: URL.createObjectURL(file),
     };
-    
+
     setFiles((prev) => [...prev, newFile]);
-    
-    // Open file viewer if it's closed
     if (!isFileViewerOpen) {
       setIsFileViewerOpen(true);
       setIsFileViewerMinimized(false);
     }
   };
-  
+
   const handleDeleteFile = (fileId: string) => {
     setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
     
@@ -439,7 +421,7 @@ export default function ChatPage() {
       description: "The file has been removed from this workspace.",
     });
   };
-  
+
   const handleExportChats = () => {
     try {
       toast({
@@ -454,15 +436,15 @@ export default function ChatPage() {
       });
     }
   };
-  
+
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
   };
-  
+
   const toggleSidebarExpand = () => {
     setIsSidebarExpanded(!isSidebarExpanded);
   };
-  
+
   const toggleFileViewer = () => {
     if (isFileViewerMinimized) {
       setIsFileViewerMinimized(false);
@@ -470,14 +452,13 @@ export default function ChatPage() {
       setIsFileViewerOpen(!isFileViewerOpen);
     }
   };
-  
+
   const toggleFileViewerMinimize = () => {
     setIsFileViewerMinimized(!isFileViewerMinimized);
   };
-  
-  // Get current active session for export button
+
   const activeSession = sessions.find(s => s.id === activeSessionId);
-  
+
   if (!isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -485,13 +466,12 @@ export default function ChatPage() {
       </div>
     );
   }
-  
+
   return (
     <div className="flex h-screen flex-col">
       <Navbar />
       
       <main className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
         <aside
           className={`${isSidebarExpanded ? 'w-72' : 'w-20'} border-r bg-card transition-all duration-300 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -565,7 +545,6 @@ export default function ChatPage() {
           )}
         </aside>
         
-        {/* Main Content Area */}
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b p-4">
             <Button
@@ -686,7 +665,6 @@ export default function ChatPage() {
         </div>
       </main>
 
-      {/* Bot Settings Dialog */}
       <Dialog open={isBotSettingsOpen} onOpenChange={setIsBotSettingsOpen}>
         <DialogContent>
           <DialogHeader>
