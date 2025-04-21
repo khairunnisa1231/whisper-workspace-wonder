@@ -19,33 +19,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(true); // Default to true since we're using the integration
+  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(true); // Always true for integrated client
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check current auth status
     const checkAuth = async () => {
       try {
         setLoading(true);
-        
+
         // Get current session
         const { data: { session } } = await supabase.auth.getSession();
-        
+
         if (session) {
           // Get user profile data
           const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .maybeSingle();
+
           if (profile) {
             setUser(profile);
             setIsAuthenticated(true);
           }
+        } else {
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error('Error checking auth status:', error);
+        console.error("Error checking auth status:", error);
       } finally {
         setLoading(false);
       }
@@ -55,27 +57,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          // Get user profile after sign in
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            setUser(profile);
-            setIsAuthenticated(true);
-          }
-        } else if (event === 'SIGNED_OUT') {
+      (event, session) => {
+        if (event === "SIGNED_IN" && session) {
+          // Fetch user profile asynchronously after auth state change
+          setTimeout(async () => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", session.user.id)
+              .maybeSingle();
+            if (profile) {
+              setUser(profile);
+              setIsAuthenticated(true);
+            }
+          }, 0);
+        } else if (event === "SIGNED_OUT") {
           setUser(null);
           setIsAuthenticated(false);
         }
       }
     );
 
-    // Cleanup subscription
     return () => {
       subscription?.unsubscribe();
     };
@@ -88,10 +90,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      
+
       if (error) throw error;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error("Login failed:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -106,19 +108,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
-      
+
       if (error) throw error;
-      
+
       if (data.user) {
         // Create a profile for the new user
-        await supabase.from('profiles').insert({
+        await supabase.from("profiles").insert({
           id: data.user.id,
           email,
           name,
         });
       }
     } catch (error) {
-      console.error('Signup failed:', error);
+      console.error("Signup failed:", error);
       throw error;
     } finally {
       setLoading(false);
@@ -129,19 +131,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      login, 
-      signup, 
-      logout, 
-      isAuthenticated, 
-      isSupabaseConfigured 
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      isAuthenticated,
+      isSupabaseConfigured,
     }}>
       {children}
     </AuthContext.Provider>

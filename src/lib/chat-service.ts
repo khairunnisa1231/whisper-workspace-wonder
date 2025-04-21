@@ -1,6 +1,4 @@
-
-import { supabase, type ChatSession, type ChatMessage, type StoredFile } from './supabase';
-import { generateAIResponse } from './gemini';
+import { supabase } from './supabase';
 
 export async function fetchChatSessions(userId: string): Promise<ChatSession[]> {
   const { data, error } = await supabase

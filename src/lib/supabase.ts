@@ -1,44 +1,12 @@
 
-import { createClient } from '@supabase/supabase-js';
 import { supabase as integratedSupabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-// We're now using the integrated Supabase client directly
+// Re-export the typed Supabase client
 export const supabase = integratedSupabase;
 
 // Database schema types
-export type Profile = {
-  id: string;
-  email: string;
-  name: string;
-  avatar_url?: string;
-  created_at: string;
-}
-
-export type ChatSession = {
-  id: string;
-  user_id: string;
-  title: string;
-  last_message: string;
-  is_pinned: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export type ChatMessage = {
-  id: string;
-  session_id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  created_at: string;
-}
-
-export type StoredFile = {
-  id: string;
-  user_id: string;
-  session_id: string;
-  name: string;
-  size: string;
-  type: string;
-  path: string;
-  created_at: string;
-}
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type ChatSession = Database["public"]["Tables"]["chat_sessions"]["Row"];
+export type ChatMessage = Database["public"]["Tables"]["chat_messages"]["Row"];
+export type StoredFile = Database["public"]["Tables"]["files"]["Row"];
