@@ -1,45 +1,73 @@
+# Welcome to your Lovable project
 
-# Katagrafy.ai Chat Application
+## Project info
 
-This is a chat application powered by Supabase for authentication and database storage, and Google's Gemini AI for intelligent responses.
+**URL**: https://lovable.dev/projects/af70ddcf-0366-438b-898b-c5e2ffde3fb6
 
-## Setup Instructions
+## How can I edit this code?
 
-### 1. Supabase Setup
+There are several ways of editing your application.
 
-1. Connect this Lovable project to Supabase by clicking the green Supabase button in the top right corner.
-2. After connecting, execute the SQL schema by going to the SQL Editor in Supabase and running the contents of the `supabase/schema.sql` file.
+**Use Lovable**
 
-### 2. Google Gemini API Setup
+Simply visit the [Lovable Project](https://lovable.dev/projects/af70ddcf-0366-438b-898b-c5e2ffde3fb6) and start prompting.
 
-1. Get a Google Gemini API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. When running the application, you'll be prompted to enter this API key.
-3. For production, add the API key to Supabase Edge Function Secrets under the key `GEMINI_API_KEY`.
+Changes made via Lovable will be committed automatically to this repo.
 
-## Features
+**Use your preferred IDE**
 
-- User authentication via Supabase Auth
-- Real-time chat with AI powered by Google's Gemini
-- Chat history management
-- File uploads and management
-- Customizable AI appearance
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-## Technical Architecture
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-- **Frontend**: React, TypeScript, TailwindCSS
-- **Backend**: Supabase (Auth, Database, Storage)
-- **AI**: Google Gemini
+Follow these steps:
 
-## Database Schema
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-The application uses the following tables:
-- `profiles`: User information
-- `chat_sessions`: Chat conversations
-- `chat_messages`: Individual messages in chats
-- `files`: Uploaded file metadata
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-## Local Development
+# Step 3: Install the necessary dependencies.
+npm i
 
-1. Connect to Supabase
-2. Run the application
-3. Enter your Gemini API key when prompted
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
+
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/af70ddcf-0366-438b-898b-c5e2ffde3fb6) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes it is!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)

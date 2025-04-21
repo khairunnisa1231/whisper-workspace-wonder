@@ -1,97 +1,53 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase, type Profile } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+}
 
 interface AuthContextType {
-  user: Profile | null;
+  user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: () => void;
   isAuthenticated: boolean;
-  isSupabaseConfigured: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<Profile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(true); // Always true for integrated client
-  const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setLoading(true);
-
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (session) {
-          // Get user profile data
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", session.user.id)
-            .maybeSingle();
-
-          if (profile) {
-            setUser(profile);
-            setIsAuthenticated(true);
-          }
-        } else {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      } catch (error) {
-        console.error("Error checking auth status:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === "SIGNED_IN" && session) {
-          // Fetch user profile asynchronously after auth state change
-          setTimeout(async () => {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("*")
-              .eq("id", session.user.id)
-              .maybeSingle();
-            if (profile) {
-              setUser(profile);
-              setIsAuthenticated(true);
-            }
-          }, 0);
-        } else if (event === "SIGNED_OUT") {
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      }
-    );
-
-    return () => {
-      subscription?.unsubscribe();
-    };
+    // Check if user is logged in from localStorage (simulating auth)
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
+    // Simulate login API call
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // In a real app, this would call your authentication API
+      // For now, we'll simulate a successful login with mock data
+      const mockUser = {
+        id: "user-123",
         email,
-        password,
-      });
-
-      if (error) throw error;
+        name: email.split("@")[0],
+      };
+      
+      setUser(mockUser);
+      setIsAuthenticated(true);
+      localStorage.setItem("user", JSON.stringify(mockUser));
     } catch (error) {
       console.error("Login failed:", error);
       throw error;
@@ -101,24 +57,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string, name: string) => {
+    // Simulate signup API call
     setLoading(true);
     try {
-      // Sign up the user
-      const { data, error } = await supabase.auth.signUp({
+      // In a real app, this would call your authentication API
+      const mockUser = {
+        id: "user-" + Date.now(),
         email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        // Create a profile for the new user
-        await supabase.from("profiles").insert({
-          id: data.user.id,
-          email,
-          name,
-        });
-      }
+        name,
+      };
+      
+      setUser(mockUser);
+      setIsAuthenticated(true);
+      localStorage.setItem("user", JSON.stringify(mockUser));
     } catch (error) {
       console.error("Signup failed:", error);
       throw error;
@@ -127,24 +78,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+  const logout = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem("user");
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      login,
-      signup,
-      logout,
-      isAuthenticated,
-      isSupabaseConfigured,
-    }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

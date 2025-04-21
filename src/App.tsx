@@ -6,8 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { AuthProvider } from "@/components/AuthProvider";
-import { useEffect } from "react";
-import { initializeApiKey } from "@/lib/api-key-manager";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ChatPage from "./pages/ChatPage";
@@ -21,11 +19,6 @@ const queryClient = new QueryClient();
 
 // Wrap the App component in a function declaration
 function App() {
-  // Initialize API key from local storage
-  useEffect(() => {
-    initializeApiKey();
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
