@@ -1,5 +1,6 @@
 
 import { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id: string;
@@ -23,65 +24,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Util to extract name from user metadata
+  function getUserObject(supabaseUser: any): User {
+    return {
+      id: supabaseUser.id,
+      email: supabaseUser.email,
+      name: supabaseUser.user_metadata?.name || supabaseUser.email?.split("@")[0] || "",
+    };
+  }
+
   useEffect(() => {
-    // Check if user is logged in from localStorage (simulating auth)
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    // Attach Supabase onAuthStateChange FIRST
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(getUserObject(session.user));
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
+
+    // Then check current session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(getUserObject(session.user));
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      listener?.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulate login API call
     setLoading(true);
-    try {
-      // In a real app, this would call your authentication API
-      // For now, we'll simulate a successful login with mock data
-      const mockUser = {
-        id: "user-123",
-        email,
-        name: email.split("@")[0],
-      };
-      
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    } finally {
+    const { error, data } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
       setLoading(false);
+      throw error;
     }
+    if (data.user) {
+      setUser(getUserObject(data.user));
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    // Simulate signup API call
     setLoading(true);
-    try {
-      // In a real app, this would call your authentication API
-      const mockUser = {
-        id: "user-" + Date.now(),
-        email,
-        name,
-      };
-      
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("user", JSON.stringify(mockUser));
-    } catch (error) {
-      console.error("Signup failed:", error);
-      throw error;
-    } finally {
+    const { error, data } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name }
+      }
+    });
+    if (error) {
       setLoading(false);
+      throw error;
     }
+    if (data.user) {
+      setUser(getUserObject(data.user));
+      setIsAuthenticated(true);
+    }
+    setLoading(false);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem("user");
   };
 
   return (
