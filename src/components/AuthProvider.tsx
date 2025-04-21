@@ -19,30 +19,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(false);
+  const [isSupabaseConfigured, setIsSupabaseConfigured] = useState(true); // Default to true since we're using the integration
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if Supabase is properly configured
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      setIsSupabaseConfigured(false);
-      setLoading(false);
-      console.warn("Supabase is not configured. Please connect to Supabase using the Lovable integration.");
-      
-      toast({
-        title: "Supabase Not Configured",
-        description: "Please connect to Supabase using the green button in the top right corner.",
-        variant: "destructive",
-      });
-      
-      return;
-    }
-    
-    setIsSupabaseConfigured(true);
-
     // Check current auth status
     const checkAuth = async () => {
       try {
@@ -102,15 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    if (!isSupabaseConfigured) {
-      toast({
-        title: "Supabase Not Configured",
-        description: "Please connect to Supabase before attempting to log in.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -128,15 +99,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string, name: string) => {
-    if (!isSupabaseConfigured) {
-      toast({
-        title: "Supabase Not Configured",
-        description: "Please connect to Supabase before attempting to sign up.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
     try {
       // Sign up the user
@@ -164,8 +126,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    if (!isSupabaseConfigured) return;
-    
     try {
       await supabase.auth.signOut();
     } catch (error) {

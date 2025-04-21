@@ -1,21 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { supabase as integratedSupabase } from "@/integrations/supabase/client";
 
-// These values should be populated when connected to Supabase via Lovable's integration
-// The Lovable Supabase integration automatically injects these values
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-// Create a dummy client if URL is not available to prevent runtime errors
-// This allows the app to at least load and show a configuration message
-export const supabase = supabaseUrl 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : createClient('https://placeholder-url.supabase.co', 'placeholder-key', {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      }
-    });
+// We're now using the integrated Supabase client directly
+export const supabase = integratedSupabase;
 
 // Database schema types
 export type Profile = {
