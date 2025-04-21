@@ -1,33 +1,21 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
-/**
- * Hook to detect if the current device is a mobile device based on screen width
- * @returns boolean indicating if the device is mobile
- */
-export function useIsMobile(): boolean {
-  const [isMobile, setIsMobile] = useState(false);
+export function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    // Check if window is defined (for SSR)
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    // Function to check if window width is mobile size
-    const checkMobile = () => {
+    const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
+
+    window.addEventListener('resize', checkIsMobile);
     
-    // Initial check
-    checkMobile();
+    // Run once on initial render
+    checkIsMobile();
     
-    // Add event listener for window resize
-    window.addEventListener("resize", checkMobile);
-    
-    // Cleanup event listener
     return () => {
-      window.removeEventListener("resize", checkMobile);
+      window.removeEventListener('resize', checkIsMobile);
     };
   }, []);
 

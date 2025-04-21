@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ChatPage from "./pages/ChatPage";
 import WorkspacePage from "./pages/WorkspacePage";
+import FAQPage from "./pages/FAQPage";
 import NotFound from "./pages/NotFound";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/workspace" element={<WorkspacePage />} />
+                <Route path="/faq" element={<FAQPage />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="*" element={<NotFound />} />

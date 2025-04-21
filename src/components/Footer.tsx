@@ -33,6 +33,11 @@ export function Footer() {
                   Pricing
                 </Link>
               </li>
+              <li>
+                <Link to="/faq" className="text-sm text-muted-foreground hover:text-foreground">
+                  FAQ
+                </Link>
+              </li>
             </ul>
           </div>
           

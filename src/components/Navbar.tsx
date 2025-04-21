@@ -33,12 +33,15 @@ export function Navbar() {
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex md:flex-1 md:justify-center">
-          {isHomePage && (
-            <div className="flex gap-6">
-              <NavLink to="/#features" label="Features" />
-              <NavLink to="/#pricing" label="Pricing" />
-            </div>
-          )}
+          <div className="flex gap-6">
+            {isHomePage && (
+              <>
+                <NavLink to="/#features" label="Features" />
+                <NavLink to="/#pricing" label="Pricing" />
+              </>
+            )}
+            <NavLink to="/faq" label="FAQ" />
+          </div>
         </nav>
         
         <div className="flex items-center gap-2">
@@ -88,6 +91,7 @@ export function Navbar() {
                 <NavLink to="/#pricing" label="Pricing" />
               </>
             )}
+            <NavLink to="/faq" label="FAQ" />
             
             {!isAuthenticated ? (
               <div className="flex flex-col gap-2 mt-2">

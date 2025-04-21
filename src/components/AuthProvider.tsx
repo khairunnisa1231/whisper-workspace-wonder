@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Attach Supabase onAuthStateChange FIRST
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser(getUserObject(session.user));
         setIsAuthenticated(true);
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      listener?.unsubscribe();
+      data?.subscription?.unsubscribe();
     };
   }, []);
 
