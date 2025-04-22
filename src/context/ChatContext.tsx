@@ -11,7 +11,8 @@ import {
   addChatMessage,
   fetchChatMessages,
   fetchWorkspaceFiles,
-  uploadWorkspaceFile
+  uploadWorkspaceFile,
+  deleteWorkspaceFile
 } from '@/services/workspace-service';
 import { askGemini } from '@/integrations/gemini/client';
 import { readFileContent } from '@/utils/readFileContent';
@@ -74,7 +75,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         
         if (chatSessions.length > 0) {
           setActiveSessionId(chatSessions[0].id);
-          setMessages(chatSessions[0].messages);
+          const sessionMessages = await fetchChatMessages(chatSessions[0].id);
+          setMessages(sessionMessages);
         } else {
           setActiveSessionId(null);
           setMessages([]);
@@ -98,11 +100,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     loadData();
   }, [activeWorkspaceId, isAuthenticated, user, toast]);
   
-  const handleSelectSession = (sessionId: string) => {
-    const session = sessions.find(s => s.id === sessionId);
-    if (session) {
+  const handleSelectSession = async (sessionId: string) => {
+    try {
       setActiveSessionId(sessionId);
-      setMessages(session.messages);
+      const sessionMessages = await fetchChatMessages(sessionId);
+      setMessages(sessionMessages);
+    } catch (err) {
+      console.error('Error fetching session messages:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to load conversation messages',
+        variant: 'destructive'
+      });
     }
   };
   
@@ -119,16 +128,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       if (initialMessage) {
         const userMessage = await addChatMessage(newSession.id, initialMessage, 'user');
-        newSession.messages = [userMessage];
+        setMessages([userMessage]);
         
         await handleSendMessageToSession(newSession.id, initialMessage);
+      } else {
+        setMessages([]);
       }
       
       const updatedSessions = await fetchChatSessions(activeWorkspaceId);
       setSessions(updatedSessions);
       
       setActiveSessionId(newSession.id);
-      setMessages(newSession.messages);
       
     } catch (err) {
       console.error('Error creating session:', err);
@@ -150,7 +160,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const remainingSessions = sessions.filter(s => s.id !== sessionId);
         if (remainingSessions.length > 0) {
           setActiveSessionId(remainingSessions[0].id);
-          setMessages(remainingSessions[0].messages);
+          const sessionMessages = await fetchChatMessages(remainingSessions[0].id);
+          setMessages(sessionMessages);
         } else {
           setActiveSessionId(null);
           setMessages([]);
@@ -221,6 +232,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         fileContext = fileContents.join('\n');
       }
       
+      console.log('Sending to Gemini with file context:', fileContext ? 'Yes' : 'No');
       const answer = await askGemini(content, fileContext);
       
       const aiMessage = await addChatMessage(sessionId, answer, 'assistant');
@@ -292,8 +304,24 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const handleDeleteFile = async (fileId: string) => {
-    // Implementation here
+  const handleDeleteFile = async (fileId: string): Promise<void> => {
+    try {
+      await deleteWorkspaceFile(fileId);
+      
+      setFiles(prev => prev.filter(f => f.id !== fileId));
+      
+      toast({
+        title: 'Success',
+        description: 'File deleted successfully'
+      });
+    } catch (err) {
+      console.error('Error deleting file:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete file',
+        variant: 'destructive'
+      });
+    }
   };
   
   const setActiveWorkspace = (workspaceId: string) => {

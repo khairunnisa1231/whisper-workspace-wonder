@@ -1,5 +1,4 @@
-
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { ChatInput } from "@/components/ChatInput";
@@ -12,7 +11,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, Settings, Menu, File, ArrowLeftFromLine, ArrowRightFromLine } from "lucide-react";
+import { Loader2, MessageSquare, Settings, Menu, File } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { 
@@ -25,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { ChatProvider, useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
-import { useState } from "react";
 
 function ChatPageContent() {
   const { isAuthenticated, user } = useAuth();

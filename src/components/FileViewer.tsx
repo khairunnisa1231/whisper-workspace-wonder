@@ -4,19 +4,12 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { File, Maximize2, Minimize2, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
-
-interface FileItem {
-  id: string;
-  name: string;
-  size: number;  // Changed from string to number to match WorkspaceFile
-  type: string;
-  url: string;
-}
+import { WorkspaceFile } from "@/models/workspace";
 
 interface FileViewerProps {
-  files: FileItem[];
+  files: WorkspaceFile[];
   onClose: () => void;
-  onDelete?: (fileId: string) => void;
+  onDelete?: (fileId: string) => Promise<void>;
   isMinimized: boolean;
   onToggleMinimize: () => void;
 }
@@ -29,7 +22,17 @@ export function FileViewer({
   onToggleMinimize 
 }: FileViewerProps) {
   
-  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [selectedFile, setSelectedFile] = useState<WorkspaceFile | null>(null);
+  
+  const formatFileSize = (sizeInBytes: number): string => {
+    if (sizeInBytes < 1024) {
+      return `${sizeInBytes} B`;
+    } else if (sizeInBytes < 1024 * 1024) {
+      return `${(sizeInBytes / 1024).toFixed(1)} KB`;
+    } else {
+      return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+  };
   
   const renderFilePreview = () => {
     if (!selectedFile) return null;
@@ -106,8 +109,10 @@ export function FileViewer({
                   variant="ghost" 
                   size="icon" 
                   onClick={() => {
-                    onDelete(selectedFile.id);
-                    setSelectedFile(null);
+                    if (selectedFile) {
+                      onDelete(selectedFile.id);
+                      setSelectedFile(null);
+                    }
                   }}
                 >
                   <Trash2 size={16} className="text-destructive" />
@@ -134,7 +139,7 @@ export function FileViewer({
                     <File size={20} className="text-muted-foreground" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">{file.size}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                     </div>
                   </div>
                 ))}
