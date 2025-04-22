@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 interface FileItem {
   id: string;
   name: string;
-  size: string;
+  size: number;  // Changed from string to number to match WorkspaceFile
   type: string;
   url: string;
 }

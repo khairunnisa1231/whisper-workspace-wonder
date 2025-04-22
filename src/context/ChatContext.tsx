@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +10,8 @@ import {
   updateChatSessionPin,
   addChatMessage,
   fetchChatMessages,
-  fetchWorkspaceFiles
+  fetchWorkspaceFiles,
+  uploadWorkspaceFile
 } from '@/services/workspace-service';
 import { askGemini } from '@/integrations/gemini/client';
 import { readFileContent } from '@/utils/readFileContent';
@@ -53,7 +53,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Get workspaceId from URL query params on mount
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const workspaceId = params.get('workspace');
@@ -63,7 +62,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   }, [location.search]);
   
-  // Load chat sessions when workspaceId changes
   useEffect(() => {
     if (!activeWorkspaceId || !isAuthenticated || !user) return;
     
@@ -71,11 +69,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       try {
         setIsLoading(true);
         
-        // Load chat sessions
         const chatSessions = await fetchChatSessions(activeWorkspaceId);
         setSessions(chatSessions);
         
-        // Set active session to the first one if available
         if (chatSessions.length > 0) {
           setActiveSessionId(chatSessions[0].id);
           setMessages(chatSessions[0].messages);
@@ -84,7 +80,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           setMessages([]);
         }
         
-        // Load workspace files
         const workspaceFiles = await fetchWorkspaceFiles(activeWorkspaceId);
         setFiles(workspaceFiles);
         
@@ -123,19 +118,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const newSession = await createChatSession(activeWorkspaceId, user.id, title);
       
       if (initialMessage) {
-        // Add user message
         const userMessage = await addChatMessage(newSession.id, initialMessage, 'user');
         newSession.messages = [userMessage];
         
-        // Process with Gemini and add AI response
         await handleSendMessageToSession(newSession.id, initialMessage);
       }
       
-      // Refetch all sessions to get latest data
       const updatedSessions = await fetchChatSessions(activeWorkspaceId);
       setSessions(updatedSessions);
       
-      // Set the new session as active
       setActiveSessionId(newSession.id);
       setMessages(newSession.messages);
       
@@ -153,10 +144,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       await deleteChatSession(sessionId);
       
-      // Remove from local state
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       
-      // If the active session was deleted, select a new one
       if (activeSessionId === sessionId) {
         const remainingSessions = sessions.filter(s => s.id !== sessionId);
         if (remainingSessions.length > 0) {
@@ -190,7 +179,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const newPinStatus = !session.isPinned;
       await updateChatSessionPin(sessionId, newPinStatus);
       
-      // Update local state
       setSessions(prev => prev.map(s => 
         s.id === sessionId ? { ...s, isPinned: newPinStatus } : s
       ));
@@ -214,14 +202,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setIsProcessing(true);
       setError(null);
       
-      // Prepare file context if we have files
       let fileContext = '';
       if (files.length > 0) {
         const fileContents = await Promise.all(
           files.slice(0, 5).map(async file => {
             try {
-              // Extract content from file for context
-              // For blob URLs, we need to fetch them first
               const response = await fetch(file.url);
               const blob = await response.blob();
               const fileContent = await readFileContent(new File([blob], file.name, { type: file.type }));
@@ -236,18 +221,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         fileContext = fileContents.join('\n');
       }
       
-      // Get AI response
       const answer = await askGemini(content, fileContext);
       
-      // Add AI message to database
       const aiMessage = await addChatMessage(sessionId, answer, 'assistant');
       
-      // Update messages if this is the active session
       if (sessionId === activeSessionId) {
         setMessages(prev => [...prev, aiMessage]);
       }
       
-      // Refresh the sessions list to update last message and timestamp
       if (activeWorkspaceId) {
         const updatedSessions = await fetchChatSessions(activeWorkspaceId);
         setSessions(updatedSessions);
@@ -271,20 +252,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const handleSendMessage = async (content: string) => {
     if (!user || !activeWorkspaceId) return;
     
-    // If no active session, create a new one
     if (!activeSessionId) {
       await handleNewSession(content);
       return;
     }
     
     try {
-      // Add user message to database
       const userMessage = await addChatMessage(activeSessionId, content, 'user');
       
-      // Update local messages
       setMessages(prev => [...prev, userMessage]);
       
-      // Get AI response
       await handleSendMessageToSession(activeSessionId, content);
       
     } catch (err) {
@@ -292,22 +269,18 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
   };
   
-  const handleFileUpload = async (file: File) => {
+  const handleFileUpload = async (file: File): Promise<void> => {
     if (!user || !activeWorkspaceId) return;
     
     try {
-      // Upload file to storage
-      const newFile = await fetch(file.url);
+      const uploadedFile = await uploadWorkspaceFile(activeWorkspaceId, user.id, file);
       
-      // Add to local state
-      setFiles(prev => [...prev, file]);
+      setFiles(prev => [...prev, uploadedFile]);
       
       toast({
         title: 'Success',
         description: 'File uploaded successfully'
       });
-      
-      return file;
     } catch (err) {
       console.error('Error uploading file:', err);
       toast({
@@ -326,7 +299,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const setActiveWorkspace = (workspaceId: string) => {
     setActiveWorkspaceId(workspaceId);
     
-    // Update URL without refreshing the page
     const searchParams = new URLSearchParams(location.search);
     searchParams.set('workspace', workspaceId);
     navigate({

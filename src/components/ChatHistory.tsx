@@ -2,13 +2,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { PlusCircle, MessageSquare, Trash2 } from "lucide-react";
+import { PlusCircle, MessageSquare, Trash2, Star } from "lucide-react";
 
 interface ChatSession {
   id: string;
   title: string;
   lastMessage: string;
   timestamp: Date;
+  isPinned?: boolean;
 }
 
 interface ChatHistoryProps {
@@ -17,6 +18,7 @@ interface ChatHistoryProps {
   onSelectSession: (sessionId: string) => void;
   onNewSession: () => void;
   onDeleteSession: (sessionId: string) => void;
+  onPinSession: (sessionId: string) => void;  // Added this prop
 }
 
 export function ChatHistory({
@@ -25,6 +27,7 @@ export function ChatHistory({
   onSelectSession,
   onNewSession,
   onDeleteSession,
+  onPinSession,
 }: ChatHistoryProps) {
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
   
@@ -59,7 +62,12 @@ export function ChatHistory({
               <div className="flex items-start gap-2">
                 <MessageSquare className="h-4 w-4 mt-0.5 shrink-0" />
                 <div className="flex-1 overflow-hidden">
-                  <h4 className="font-medium truncate">{session.title}</h4>
+                  <div className="flex items-center gap-1">
+                    <h4 className="font-medium truncate flex-1">{session.title}</h4>
+                    {session.isPinned && (
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                    )}
+                  </div>
                   <p className="truncate text-xs opacity-70">
                     {session.lastMessage}
                   </p>
@@ -70,17 +78,31 @@ export function ChatHistory({
               </div>
               
               {(hoveredSession === session.id || activeSessionId === session.id) && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1 h-6 w-6 opacity-70 hover:opacity-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteSession(session.id);
-                  }}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+                <div className="absolute right-1 top-1 flex space-x-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-70 hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPinSession(session.id);
+                    }}
+                    title={session.isPinned ? "Unpin chat" : "Pin chat"}
+                  >
+                    <Star className={`h-3 w-3 ${session.isPinned && "fill-yellow-400 text-yellow-400"}`} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-70 hover:opacity-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteSession(session.id);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
               )}
             </div>
           ))}
