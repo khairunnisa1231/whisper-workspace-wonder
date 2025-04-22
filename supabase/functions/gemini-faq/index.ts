@@ -20,7 +20,6 @@ serve(async (req) => {
     const { prompt } = await req.json();
 
     if (!prompt) {
-      console.error("Missing prompt in request body");
       return new Response(
         JSON.stringify({ error: "Missing prompt in request body" }),
         { 
@@ -31,12 +30,8 @@ serve(async (req) => {
     }
 
     if (!GEMINI_API_KEY) {
-      console.error("Gemini API key is not configured");
       return new Response(
-        JSON.stringify({ 
-          error: "Gemini API key is not configured",
-          message: "Please add GEMINI_API_KEY in edge function secrets"
-        }),
+        JSON.stringify({ error: "Gemini API key is not configured" }),
         { 
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -107,7 +102,6 @@ serve(async (req) => {
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 
       "I'm sorry, I couldn't generate an answer at this time. Please try again later.";
 
-    console.log("Gemini API response processed successfully");
     return new Response(
       JSON.stringify({ answer }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -116,10 +110,7 @@ serve(async (req) => {
     console.error('Error in gemini-faq function:', error);
     
     return new Response(
-      JSON.stringify({ 
-        error: error.message || "An unknown error occurred",
-        stack: error.stack
-      }),
+      JSON.stringify({ error: error.message || "An unknown error occurred" }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

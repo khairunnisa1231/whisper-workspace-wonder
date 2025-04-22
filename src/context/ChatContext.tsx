@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -59,22 +60,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     const workspaceId = params.get('workspace');
     
     if (workspaceId) {
-      console.log('Setting active workspace from URL:', workspaceId);
       setActiveWorkspaceId(workspaceId);
-    } else {
-      console.log('No workspace ID in URL');
     }
   }, [location.search]);
   
   useEffect(() => {
-    if (!activeWorkspaceId || !isAuthenticated || !user) {
-      console.log('Not loading data:', { 
-        activeWorkspaceId: activeWorkspaceId ? 'yes' : 'no', 
-        isAuthenticated: isAuthenticated ? 'yes' : 'no', 
-        user: user ? 'yes' : 'no'
-      });
-      return;
-    }
+    if (!activeWorkspaceId || !isAuthenticated || !user) return;
     
     async function loadData() {
       try {
@@ -83,32 +74,29 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         
         // Fetch chat sessions
         const chatSessions = await fetchChatSessions(activeWorkspaceId);
-        console.log('Fetched chat sessions:', chatSessions.length);
+        console.log('Fetched chat sessions:', chatSessions);
         setSessions(chatSessions);
         
         if (chatSessions.length > 0) {
-          console.log('Setting active session to:', chatSessions[0].id);
           setActiveSessionId(chatSessions[0].id);
           const sessionMessages = await fetchChatMessages(chatSessions[0].id);
-          console.log('Fetched messages for first session:', sessionMessages.length);
+          console.log('Fetched messages for first session:', sessionMessages);
           setMessages(sessionMessages);
         } else {
-          console.log('No chat sessions found, clearing session and messages');
           setActiveSessionId(null);
           setMessages([]);
         }
         
         // Fetch workspace files
         const workspaceFiles = await fetchWorkspaceFiles(activeWorkspaceId);
-        console.log('Fetched workspace files:', workspaceFiles.length);
+        console.log('Fetched workspace files:', workspaceFiles);
         setFiles(workspaceFiles);
         
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-        console.error('Error loading chat data:', errorMessage);
+        console.error('Error loading chat data:', err);
         toast({
           title: 'Error',
-          description: 'Failed to load chat data: ' + errorMessage,
+          description: 'Failed to load chat data',
           variant: 'destructive'
         });
       } finally {
@@ -121,32 +109,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   
   const handleSelectSession = async (sessionId: string) => {
     try {
-      console.log('Selecting session:', sessionId);
       setActiveSessionId(sessionId);
       const sessionMessages = await fetchChatMessages(sessionId);
-      console.log('Fetched messages for session:', sessionMessages.length);
       setMessages(sessionMessages);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error fetching session messages:', errorMessage);
+      console.error('Error fetching session messages:', err);
       toast({
         title: 'Error',
-        description: 'Failed to load conversation messages: ' + errorMessage,
+        description: 'Failed to load conversation messages',
         variant: 'destructive'
       });
     }
   };
   
   const handleNewSession = async (initialMessage?: string) => {
-    if (!user || !activeWorkspaceId) {
-      console.error('No user or active workspace for new session');
-      toast({
-        title: 'Error',
-        description: 'Please select a workspace first',
-        variant: 'destructive'
-      });
-      return;
-    }
+    if (!user || !activeWorkspaceId) return;
     
     try {
       let title = 'New Conversation';
@@ -156,17 +133,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       console.log('Creating new session with title:', title);
       const newSession = await createChatSession(activeWorkspaceId, user.id, title);
-      console.log('New session created:', newSession.id);
-      
-      // Set the active session immediately to provide immediate feedback
-      setActiveSessionId(newSession.id);
+      console.log('New session created:', newSession);
       
       if (initialMessage) {
-        console.log('Adding initial user message');
         const userMessage = await addChatMessage(newSession.id, initialMessage, 'user');
         setMessages([userMessage]);
         
-        console.log('Sending initial message to get AI response');
         await handleSendMessageToSession(newSession.id, initialMessage);
       } else {
         setMessages([]);
@@ -175,12 +147,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const updatedSessions = await fetchChatSessions(activeWorkspaceId);
       setSessions(updatedSessions);
       
+      setActiveSessionId(newSession.id);
+      
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error creating session:', errorMessage);
+      console.error('Error creating session:', err);
       toast({
         title: 'Error',
-        description: 'Failed to create new conversation: ' + errorMessage,
+        description: 'Failed to create new conversation',
         variant: 'destructive'
       });
     }
@@ -246,7 +219,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   
   const handleSendMessageToSession = async (sessionId: string, content: string) => {
     try {
-      console.log('Processing message to session:', sessionId);
       setIsProcessing(true);
       setError(null);
       
@@ -273,18 +245,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       console.log('Sending to Gemini with file context:', fileContext ? 'Yes' : 'No');
       const answer = await askGemini(content, fileContext);
-      console.log('Received answer from Gemini:', answer.substring(0, 50) + '...');
+      console.log('Received answer from Gemini');
       
       const aiMessage = await addChatMessage(sessionId, answer, 'assistant');
-      console.log('Added AI message to database, ID:', aiMessage.id);
+      console.log('Added AI message to database');
       
       if (sessionId === activeSessionId) {
-        console.log('Updating messages state with new AI message');
         setMessages(prev => [...prev, aiMessage]);
       }
       
       if (activeWorkspaceId) {
-        console.log('Refreshing sessions after AI response');
         const updatedSessions = await fetchChatSessions(activeWorkspaceId);
         setSessions(updatedSessions);
       }
@@ -307,12 +277,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   
   const handleSendMessage = async (content: string) => {
     if (!user || !activeWorkspaceId) {
-      console.error('No user or active workspace for sending message');
-      toast({
-        title: 'Error',
-        description: 'Please select a workspace before sending messages',
-        variant: 'destructive'
-      });
+      console.error('No user or active workspace');
       return;
     }
     
@@ -325,22 +290,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Adding user message to session:', activeSessionId);
       const userMessage = await addChatMessage(activeSessionId, content, 'user');
-      console.log('User message added, ID:', userMessage.id);
       
-      // Immediately update the UI with the user message
       setMessages(prev => [...prev, userMessage]);
       
-      // Send to Gemini and get response
       await handleSendMessageToSession(activeSessionId, content);
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('Error sending message:', errorMessage);
-      toast({
-        title: 'Error',
-        description: 'Failed to send message: ' + errorMessage,
-        variant: 'destructive'
-      });
+      console.error('Error sending message:', err);
     }
   };
   
