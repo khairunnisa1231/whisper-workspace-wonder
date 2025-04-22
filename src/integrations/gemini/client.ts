@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function askGemini(prompt: string, fileContext?: string): Promise<string> {
   try {
+    console.log('Sending prompt to Gemini:', prompt.substring(0, 100) + "...");
+    
     // Create the full prompt with file context if provided
     const fullPrompt = fileContext 
       ? `${prompt}\n\nContext from uploaded files:\n${fileContext}` 
@@ -19,9 +21,15 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
 
     if (error) {
       console.error('Error invoking gemini-faq function:', error);
-      throw new Error('Failed to get answer from Gemini AI');
+      throw new Error('Failed to get answer from Gemini AI: ' + error.message);
     }
 
+    if (!data || !data.answer) {
+      console.error('Invalid response from Gemini:', data);
+      throw new Error('Failed to get a valid response from Gemini AI');
+    }
+
+    console.log('Received answer from Gemini successfully');
     return data.answer;
   } catch (error) {
     console.error('Error in askGemini:', error);

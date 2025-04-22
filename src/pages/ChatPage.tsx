@@ -12,7 +12,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, Settings, Menu, File } from "lucide-react";
+import { Loader2, MessageSquare, Settings, Menu, File, AlertCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { 
@@ -25,12 +25,14 @@ import {
 } from "@/components/ui/dialog";
 import { ChatProvider, useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { useWorkspaceRedirect } from "@/utils/workspaceUtils";
 
 function ChatPageContent() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { checkAndRedirect } = useWorkspaceRedirect();
   
   const {
     sessions,
@@ -63,9 +65,6 @@ function ChatPageContent() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const userPlan = "Basic";
-  const promptsRemaining = 85;
-  
   const recommendedPrompts = [
     "Help me draft an email to my boss",
     "Explain machine learning concepts to a beginner",
@@ -77,21 +76,37 @@ function ChatPageContent() {
     "Write a story about a space traveler"
   ];
   
+  // Check if user is authenticated and if there's an active workspace
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
+      return;
     }
-  }, [isAuthenticated, navigate]);
+    
+    if (activeWorkspaceId === null) {
+      toast({
+        title: "No workspace selected",
+        description: "Please create or select a workspace first",
+        variant: "destructive"
+      });
+      navigate("/workspaces");
+    }
+  }, [isAuthenticated, activeWorkspaceId, navigate, toast]);
   
+  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Debug log for messages
   useEffect(() => {
-    console.log("Messages updated:", messages);
+    console.log("Messages updated, count:", messages.length);
   }, [messages]);
   
+  // Handle file upload
   const handleFileInputChange = async (file: File) => {
+    if (!checkAndRedirect(activeWorkspaceId)) return;
+    
     try {
       console.log('Uploading file:', file.name);
       await handleFileUpload(file);
@@ -104,6 +119,7 @@ function ChatPageContent() {
     }
   };
 
+  // Message selection handling
   const handleSelectMessage = (messageId: string, selected: boolean) => {
     setSelectedMessageIds(prev => {
       if (selected) {
@@ -121,27 +137,9 @@ function ChatPageContent() {
     }
   };
 
-  const handleExportChats = () => {
-    try {
-      toast({
-        title: "Exporting all chats",
-        description: "Your conversations are being exported.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export failed",
-        description: "There was an error exporting your chats. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
+  // UI toggle functions
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
-  };
-
-  const toggleSidebarExpand = () => {
-    setIsSidebarExpanded(!isSidebarExpanded);
   };
 
   const toggleFileViewer = () => {
@@ -158,25 +156,51 @@ function ChatPageContent() {
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
   
+  // Workspace selection
   const handleWorkspaceSelect = (workspaceId: string) => {
     console.log('Selected workspace:', workspaceId);
     setActiveWorkspace(workspaceId);
   };
 
+  // Send message with validation
   const handleSendMessageWithLog = async (content: string) => {
+    if (!checkAndRedirect(activeWorkspaceId)) return;
+    
     console.log('Sending message:', content);
     try {
       await handleSendMessage(content);
-      console.log('Message sent successfully, messages length:', messages.length + 1);
+      console.log('Message sent successfully');
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
 
+  // Loading state
   if (!isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // No workspace selected
+  if (activeWorkspaceId === null) {
+    return (
+      <div className="flex flex-col h-screen">
+        <Navbar />
+        <div className="flex flex-1 items-center justify-center">
+          <div className="text-center max-w-md p-6">
+            <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">No Workspace Selected</h2>
+            <p className="text-muted-foreground mb-6">
+              You need to create or select a workspace before you can start chatting with Gemini.
+            </p>
+            <Button onClick={() => navigate("/workspaces")}>
+              Go to Workspaces
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -272,7 +296,7 @@ function ChatPageContent() {
                         Start a New Conversation
                       </h2>
                       <p className="text-muted-foreground max-w-md">
-                        Type a message below to start chatting with Katagrafy.ai, your AI-powered
+                        Type a message below to start chatting with Gemini, your AI-powered
                         conversation assistant.
                       </p>
                     </div>
