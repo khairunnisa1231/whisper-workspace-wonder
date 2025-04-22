@@ -9,12 +9,12 @@ export function useGemini() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const askQuestion = async (prompt: string) => {
+  const askQuestion = async (prompt: string, fileContext?: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const answer = await askGemini(prompt);
+      const answer = await askGemini(prompt, fileContext);
       setResponse(answer);
       return answer;
     } catch (err) {

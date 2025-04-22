@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
-import { ChatSidebar } from "@/components/ChatSidebar";
+import { ChatHistory } from "@/components/ChatHistory";
 import { ChatExportButton } from "@/components/ChatExportButton";
 import { FileViewer } from "@/components/FileViewer";
 import { BotImageSelector } from "@/components/BotImageSelector";
@@ -22,38 +23,33 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
-import { askGemini } from "@/integrations/gemini/client";
-import { readFileContent } from "@/utils/readFileContent";
+import { ChatProvider, useChat } from "@/context/ChatContext";
+import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { useState } from "react";
 
-interface Message {
-  id: string;
-  content: string;
-  role: "user" | "assistant";
-  timestamp: Date;
-}
-
-interface ChatSession {
-  id: string;
-  title: string;
-  lastMessage: string;
-  timestamp: Date;
-  messages: Message[];
-  isPinned?: boolean;
-}
-
-interface FileItem {
-  id: string;
-  name: string;
-  size: string;
-  type: string;
-  url: string;
-}
-
-export default function ChatPage() {
+function ChatPageContent() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  
+  const {
+    sessions,
+    activeSessionId,
+    activeWorkspaceId,
+    messages,
+    files,
+    isLoading,
+    isProcessing,
+    handleSelectSession,
+    handleNewSession,
+    handleDeleteSession,
+    handlePinSession,
+    handleSendMessage,
+    handleFileUpload,
+    handleDeleteFile,
+    setActiveWorkspace
+  } = useChat();
   
   const [botImageUrl, setBotImageUrl] = useState<string | null>(null);
   const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
@@ -63,30 +59,8 @@ export default function ChatPage() {
   const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
   const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
   
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
-  
-  const [files, setFiles] = useState<FileItem[]>([
-    {
-      id: "f1",
-      name: "project-report.pdf",
-      size: "2.4 MB",
-      type: "application/pdf",
-      url: "https://example.com/files/project-report.pdf"
-    },
-    {
-      id: "f2",
-      name: "screenshot.png",
-      size: "1.2 MB",
-      type: "image/png",
-      url: "https://via.placeholder.com/800x600"
-    }
-  ]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -111,252 +85,15 @@ export default function ChatPage() {
   }, [isAuthenticated, navigate]);
   
   useEffect(() => {
-    const sampleSessions: ChatSession[] = [
-      {
-        id: "s1",
-        title: "Introduction to Katagrafy.ai",
-        lastMessage: "Let me show you how I can help.",
-        timestamp: new Date(),
-        isPinned: true,
-        messages: [
-          {
-            id: "m1",
-            content: "Hello! Welcome to Katagrafy.ai. How can I help you today?",
-            role: "assistant",
-            timestamp: new Date(),
-          },
-        ],
-      },
-      {
-        id: "s2",
-        title: "Project Planning",
-        lastMessage: "I'll help you outline your project.",
-        timestamp: new Date(Date.now() - 86400000),
-        messages: [
-          {
-            id: "m2",
-            content: "I need help planning my new project.",
-            role: "user",
-            timestamp: new Date(Date.now() - 86400000),
-          },
-          {
-            id: "m3",
-            content: "I'd be happy to help with your project planning. What kind of project are you working on?",
-            role: "assistant",
-            timestamp: new Date(Date.now() - 86400000 + 30000),
-          },
-        ],
-      },
-      {
-        id: "s3",
-        title: "Data Analysis Tips",
-        lastMessage: "These techniques will help analyze your data better.",
-        timestamp: new Date(Date.now() - 172800000),
-        messages: [
-          {
-            id: "m4",
-            content: "What's the best way to analyze this dataset?",
-            role: "user",
-            timestamp: new Date(Date.now() - 172800000),
-          },
-          {
-            id: "m5",
-            content: "For your dataset, I recommend starting with exploratory data analysis. This involves summarizing the main characteristics using statistical methods and visualization techniques.",
-            role: "assistant",
-            timestamp: new Date(Date.now() - 172800000 + 30000),
-          },
-        ],
-      },
-    ];
-    
-    const sortedSessions = [...sampleSessions].sort((a, b) => {
-      if (a.isPinned && !b.isPinned) return -1;
-      if (!a.isPinned && b.isPinned) return 1;
-      return b.timestamp.getTime() - a.timestamp.getTime();
-    });
-    
-    setSessions(sortedSessions);
-    setActiveSessionId("s1");
-    setMessages(sampleSessions[0].messages);
-  }, []);
-  
-  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
   
-  useEffect(() => {
-    if (activeSessionId) {
-      const activeSession = sessions.find((s) => s.id === activeSessionId);
-      if (activeSession) {
-        setMessages(activeSession.messages);
-      }
+  const handleFileInputChange = async (file: File) => {
+    await handleFileUpload(file);
+    if (!isFileViewerOpen) {
+      setIsFileViewerOpen(true);
+      setIsFileViewerMinimized(false);
     }
-    
-    setSelectedMessageIds([]);
-    setSelectionMode(false);
-  }, [activeSessionId, sessions]);
-  
-  const handleSendMessage = async (content: string) => {
-    if (!activeSessionId) {
-      handleNewSession(content);
-      return;
-    }
-
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      content,
-      role: "user",
-      timestamp: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-
-    setSessions((prev) =>
-      prev.map((session) => session.id === activeSessionId
-        ? { ...session, lastMessage: content, timestamp: new Date(), messages: [...session.messages, userMessage] }
-        : session
-      )
-    );
-
-    setIsProcessing(true);
-
-    try {
-      let prompt = content;
-      if (files.length > 0) {
-        const fileTexts = [];
-        for (let file of files.slice(0, 2)) {
-          fileTexts.push(`User uploaded file: ${file.name} (${file.type}), URL: ${file.url}`);
-        }
-        prompt += "\n\n[Context: The following files are uploaded by the user:]\n" + fileTexts.join("\n");
-      }
-
-      const answer = await askGemini(prompt);
-
-      const aiMessage: Message = {
-        id: `ai-${Date.now()}`,
-        content: answer,
-        role: "assistant",
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-      setSessions((prev) =>
-        prev.map((session) =>
-          session.id === activeSessionId
-            ? { ...session, messages: [...session.messages, userMessage, aiMessage] }
-            : session
-        )
-      );
-    } catch (error: any) {
-      toast({
-        title: "Gemini Error",
-        description: error?.message || "Failed to get a response from Gemini AI.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleNewSession = (initialMessage?: string) => {
-    const newSessionId = `s${Date.now()}`;
-    
-    let newMessages: Message[] = [];
-    let sessionTitle = "New Conversation";
-    
-    if (initialMessage) {
-      const userMessage: Message = {
-        id: `user-${Date.now()}`,
-        content: initialMessage,
-        role: "user",
-        timestamp: new Date(),
-      };
-      
-      newMessages = [userMessage];
-      
-      sessionTitle = initialMessage.split(" ").slice(0, 3).join(" ") + "...";
-    }
-    
-    const newSession: ChatSession = {
-      id: newSessionId,
-      title: sessionTitle,
-      lastMessage: initialMessage || "Start a new conversation",
-      timestamp: new Date(),
-      messages: newMessages,
-    };
-    
-    setSessions((prev) => {
-      const updatedSessions = [newSession, ...prev];
-      return updatedSessions.sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return b.timestamp.getTime() - a.timestamp.getTime();
-      });
-    });
-    
-    setActiveSessionId(newSessionId);
-    setMessages(newMessages);
-    
-    if (initialMessage) {
-      handleSendMessage(initialMessage);
-    }
-  };
-
-  const handleSelectSession = (sessionId: string) => {
-    setActiveSessionId(sessionId);
-    const session = sessions.find((s) => s.id === sessionId);
-    if (session) {
-      setMessages(session.messages);
-    }
-  };
-
-  const handleDeleteSession = (sessionId: string) => {
-    setSessions((prev) => prev.filter((session) => session.id !== sessionId));
-    
-    if (activeSessionId === sessionId) {
-      const remainingSessions = sessions.filter((s) => s.id !== sessionId);
-      if (remainingSessions.length > 0) {
-        setActiveSessionId(remainingSessions[0].id);
-        setMessages(remainingSessions[0].messages);
-      } else {
-        setActiveSessionId(null);
-        setMessages([]);
-      }
-    }
-    
-    toast({
-      title: "Chat deleted",
-      description: "The chat has been removed from your history.",
-    });
-  };
-
-  const handlePinSession = (sessionId: string) => {
-    setSessions((prev) => {
-      const updatedSessions = prev.map((session) => {
-        if (session.id === sessionId) {
-          return {
-            ...session,
-            isPinned: !session.isPinned,
-          };
-        }
-        return session;
-      });
-      
-      return updatedSessions.sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return b.timestamp.getTime() - a.timestamp.getTime();
-      });
-    });
-    
-    toast({
-      title: sessions.find(s => s.id === sessionId)?.isPinned 
-        ? "Chat unpinned" 
-        : "Chat pinned",
-      description: sessions.find(s => s.id === sessionId)?.isPinned 
-        ? "Chat removed from favorites" 
-        : "Chat added to favorites",
-    });
   };
 
   const handleSelectMessage = (messageId: string, selected: boolean) => {
@@ -374,52 +111,6 @@ export default function ChatPage() {
     if (selectionMode) {
       setSelectedMessageIds([]);
     }
-  };
-
-  const handleFileUpload = async (file: File) => {
-    const fileId = `f${Date.now()}`;
-    const fileSize = file.size < 1024 
-      ? `${file.size} B`
-      : file.size < 1024 * 1024
-        ? `${(file.size / 1024).toFixed(1)} KB`
-        : `${(file.size / (1024 * 1024)).toFixed(1)} MB`;
-
-    let previewContent = "";
-    try {
-      const content = await readFileContent(file);
-      if (content && content.length < 1800) {
-        previewContent = content;
-      } else if (content) {
-        previewContent = content.slice(0, 1800) + '...';
-      } else {
-        previewContent = "(File uploaded, but no text preview available)";
-      }
-    } catch {
-      previewContent = "(Could not read file content)";
-    }
-
-    const newFile: FileItem = {
-      id: fileId,
-      name: file.name,
-      size: fileSize,
-      type: file.type,
-      url: URL.createObjectURL(file),
-    };
-
-    setFiles((prev) => [...prev, newFile]);
-    if (!isFileViewerOpen) {
-      setIsFileViewerOpen(true);
-      setIsFileViewerMinimized(false);
-    }
-  };
-
-  const handleDeleteFile = (fileId: string) => {
-    setFiles((prevFiles) => prevFiles.filter((file) => file.id !== fileId));
-    
-    toast({
-      title: "File deleted",
-      description: "The file has been removed from this workspace.",
-    });
   };
 
   const handleExportChats = () => {
@@ -458,6 +149,10 @@ export default function ChatPage() {
   };
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
+  
+  const handleWorkspaceSelect = (workspaceId: string) => {
+    setActiveWorkspace(workspaceId);
+  };
 
   if (!isAuthenticated) {
     return (
@@ -477,72 +172,18 @@ export default function ChatPage() {
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${isMobile ? "absolute z-20 h-[calc(100%-64px)]" : "relative"}`}
         >
-          {isSidebarExpanded ? (
-            <ChatSidebar
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onSelectSession={handleSelectSession}
-              onNewSession={() => handleNewSession()}
-              onDeleteSession={handleDeleteSession}
-              onPinSession={handlePinSession}
-              onExportChats={handleExportChats}
-              userPlan={userPlan}
-              onToggleSidebar={toggleSidebarExpand}
-              promptsRemaining={promptsRemaining}
-            />
-          ) : (
-            <div className="flex flex-col h-full py-4 items-center">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mb-4"
-                onClick={() => handleNewSession()}
-                title="New Chat"
-              >
-                <MessageSquare className="h-5 w-5" />
-              </Button>
-              
-              <ScrollArea className="flex-1 w-full">
-                <div className="flex flex-col items-center gap-4 px-2">
-                  {sessions.map((session) => (
-                    <Button
-                      key={session.id}
-                      variant={activeSessionId === session.id ? "secondary" : "ghost"}
-                      size="icon"
-                      className="relative"
-                      onClick={() => handleSelectSession(session.id)}
-                      title={session.title}
-                    >
-                      <MessageSquare className="h-5 w-5" />
-                      {session.isPinned && (
-                        <div className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-yellow-400" />
-                      )}
-                    </Button>
-                  ))}
-                </div>
-              </ScrollArea>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mt-auto mb-2"
-                onClick={toggleSidebarExpand}
-                title="Expand sidebar"
-              >
-                <ArrowRightFromLine className="h-5 w-5" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="mt-2"
-                onClick={() => setIsBotSettingsOpen(true)}
-                title="Bot settings"
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-            </div>
-          )}
+          <div className="p-4 flex flex-col gap-3 border-b">
+            <WorkspaceSelector onSelect={handleWorkspaceSelect} />
+          </div>
+          
+          <ChatHistory
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onSelectSession={handleSelectSession}
+            onNewSession={() => handleNewSession()}
+            onDeleteSession={handleDeleteSession}
+            onPinSession={handlePinSession}
+          />
         </aside>
         
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -567,7 +208,7 @@ export default function ChatPage() {
                 <ChatExportButton 
                   sessionId={activeSession.id}
                   sessionTitle={activeSession.title}
-                  messages={activeSession.messages}
+                  messages={messages}
                   selectedMessageIds={selectedMessageIds}
                   onToggleSelectionMode={toggleSelectionMode}
                   selectionMode={selectionMode}
@@ -599,7 +240,11 @@ export default function ChatPage() {
             <ResizablePanel defaultSize={isFileViewerOpen ? 70 : 100} minSize={40}>
               <div className="flex flex-col h-full">
                 <ScrollArea className="flex-1 p-4">
-                  {messages.length === 0 ? (
+                  {isLoading ? (
+                    <div className="flex h-full items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center text-center">
                       <div className="rounded-full bg-primary/10 p-4 mb-4">
                         <MessageSquare className="h-10 w-10 text-primary" />
@@ -630,7 +275,7 @@ export default function ChatPage() {
                 </ScrollArea>
                 <ChatInput
                   onSendMessage={handleSendMessage}
-                  onFileUpload={handleFileUpload}
+                  onFileUpload={handleFileInputChange}
                   isProcessing={isProcessing}
                   recommendedPrompts={recommendedPrompts}
                 />
@@ -700,5 +345,13 @@ export default function ChatPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <ChatProvider>
+      <ChatPageContent />
+    </ChatProvider>
   );
 }

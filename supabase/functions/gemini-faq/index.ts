@@ -39,12 +39,7 @@ serve(async (req) => {
       );
     }
 
-    // Prepare the system prompt to focus on FAQ responses
-    const systemPrompt = `You are a helpful AI assistant for Katagrafy.ai, an AI-powered conversation assistant. 
-    Answer the user's question in a friendly, concise manner. Stick to information about Katagrafy.ai features, 
-    pricing, usage, and functionality. If you don't know something specific about Katagrafy.ai, you can explain 
-    based on the context that it's an AI chat assistant that helps users organize conversations, get instant 
-    answers, and boost productivity. Keep answers under 3 paragraphs.`;
+    console.log("Sending prompt to Gemini API:", prompt.substring(0, 100) + "...");
 
     // Make request to Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
@@ -56,17 +51,14 @@ serve(async (req) => {
         contents: [
           {
             role: "user",
-            parts: [
-              { text: systemPrompt },
-              { text: prompt }
-            ]
+            parts: [{ text: prompt }]
           }
         ],
         generationConfig: {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 4096,
         },
         safetySettings: [
           {
@@ -90,6 +82,21 @@ serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log("Gemini API response status:", response.status);
+    
+    if (!response.ok) {
+      console.error("Gemini API error:", data);
+      return new Response(
+        JSON.stringify({ 
+          error: data.error?.message || "Error from Gemini API",
+          details: data
+        }),
+        { 
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
     
     // Extract the text from the response
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 

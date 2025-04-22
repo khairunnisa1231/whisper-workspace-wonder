@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -16,28 +16,48 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Check, ChevronsUpDown, Plus, FolderPlus } from "lucide-react";
-
-interface Workspace {
-  id: string;
-  name: string;
-}
-
-const defaultWorkspaces = [
-  { id: "w1", name: "Personal" },
-  { id: "w2", name: "Work" },
-  { id: "w3", name: "Research" },
-];
+import { useAuth } from "@/components/AuthProvider";
+import { fetchUserWorkspaces, createWorkspace } from "@/services/workspace-service";
+import { Workspace } from "@/models/workspace";
+import { useToast } from "@/hooks/use-toast";
 
 interface WorkspaceSelectorProps {
   onSelect: (workspaceId: string) => void;
 }
 
 export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>(defaultWorkspaces);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace>(workspaces[0]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    async function loadWorkspaces() {
+      if (!user) return;
+      
+      try {
+        setIsLoading(true);
+        const userWorkspaces = await fetchUserWorkspaces(user.id);
+        setWorkspaces(userWorkspaces);
+        
+        // Select the first workspace by default
+        if (userWorkspaces.length > 0 && !selectedWorkspace) {
+          setSelectedWorkspace(userWorkspaces[0]);
+          onSelect(userWorkspaces[0].id);
+        }
+      } catch (error) {
+        console.error('Error loading workspaces:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadWorkspaces();
+  }, [user, onSelect]);
   
   const handleSelect = (workspace: Workspace) => {
     setSelectedWorkspace(workspace);
@@ -45,17 +65,30 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
     setOpen(false);
   };
   
-  const handleCreateWorkspace = () => {
+  const handleCreateWorkspace = async () => {
+    if (!user) return;
+    
     if (isCreatingWorkspace) {
       if (newWorkspaceName.trim()) {
-        const newWorkspace = {
-          id: `w${workspaces.length + 1}`,
-          name: newWorkspaceName,
-        };
-        setWorkspaces([...workspaces, newWorkspace]);
-        setSelectedWorkspace(newWorkspace);
-        onSelect(newWorkspace.id);
-        setNewWorkspaceName("");
+        try {
+          const newWorkspace = await createWorkspace(user.id, newWorkspaceName);
+          setWorkspaces(prev => [...prev, newWorkspace]);
+          setSelectedWorkspace(newWorkspace);
+          onSelect(newWorkspace.id);
+          setNewWorkspaceName("");
+          
+          toast({
+            title: "Workspace Created",
+            description: `Workspace "${newWorkspace.name}" created successfully.`
+          });
+        } catch (error) {
+          console.error('Error creating workspace:', error);
+          toast({
+            title: "Error",
+            description: "Failed to create workspace",
+            variant: "destructive"
+          });
+        }
       }
       setIsCreatingWorkspace(false);
     } else {
@@ -71,8 +104,15 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
           role="combobox"
           aria-expanded={open}
           className="w-full justify-between"
+          disabled={isLoading}
         >
-          {selectedWorkspace.name}
+          {isLoading ? (
+            "Loading workspaces..."
+          ) : selectedWorkspace ? (
+            selectedWorkspace.name
+          ) : (
+            "Select workspace"
+          )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -90,7 +130,7 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
                 >
                   <Check
                     className={`mr-2 h-4 w-4 ${
-                      selectedWorkspace.id === workspace.id
+                      selectedWorkspace?.id === workspace.id
                         ? "opacity-100"
                         : "opacity-0"
                     }`}

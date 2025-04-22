@@ -2,13 +2,19 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Send a prompt to the Gemini AI for answering FAQ questions
+ * Send a prompt to the Gemini AI for answering questions
+ * Includes support for passing file content context
  */
-export async function askGemini(prompt: string): Promise<string> {
+export async function askGemini(prompt: string, fileContext?: string): Promise<string> {
   try {
+    // Create the full prompt with file context if provided
+    const fullPrompt = fileContext 
+      ? `${prompt}\n\nContext from uploaded files:\n${fileContext}` 
+      : prompt;
+    
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
-      body: { prompt },
+      body: { prompt: fullPrompt },
     });
 
     if (error) {
