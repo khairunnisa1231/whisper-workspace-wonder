@@ -5,6 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { File, Maximize2, Minimize2, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { WorkspaceFile } from "@/models/workspace";
+import { Toast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast";
 
 interface FileViewerProps {
   files: WorkspaceFile[];
@@ -23,6 +25,8 @@ export function FileViewer({
 }: FileViewerProps) {
   
   const [selectedFile, setSelectedFile] = useState<WorkspaceFile | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
   
   const formatFileSize = (sizeInBytes: number): string => {
     if (sizeInBytes < 1024) {
@@ -31,6 +35,29 @@ export function FileViewer({
       return `${(sizeInBytes / 1024).toFixed(1)} KB`;
     } else {
       return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+  };
+  
+  const handleDeleteFile = async (fileId: string) => {
+    if (!onDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      await onDelete(fileId);
+      setSelectedFile(null);
+      toast({
+        title: "Success",
+        description: "File deleted successfully"
+      });
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete file",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
   
@@ -110,10 +137,10 @@ export function FileViewer({
                   size="icon" 
                   onClick={() => {
                     if (selectedFile) {
-                      onDelete(selectedFile.id);
-                      setSelectedFile(null);
+                      handleDeleteFile(selectedFile.id);
                     }
                   }}
+                  disabled={isDeleting}
                 >
                   <Trash2 size={16} className="text-destructive" />
                 </Button>

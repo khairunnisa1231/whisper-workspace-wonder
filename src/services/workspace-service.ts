@@ -3,51 +3,74 @@ import { Workspace, WorkspaceFile, ChatSession, ChatMessage } from "@/models/wor
 
 // Workspaces
 export async function fetchUserWorkspaces(userId: string): Promise<Workspace[]> {
-  const { data, error } = await supabase
-    .from('workspaces')
-    .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  console.log('Fetching workspaces for user ID:', userId);
+  try {
+    const { data, error } = await supabase
+      .from('workspaces')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
 
-  if (error) {
-    console.error('Error fetching workspaces:', error);
-    throw new Error('Failed to fetch workspaces');
+    if (error) {
+      console.error('Error fetching workspaces:', error);
+      throw new Error('Failed to fetch workspaces');
+    }
+
+    if (!data) {
+      console.log('No workspaces found');
+      return [];
+    }
+
+    console.log('Workspaces fetched:', data);
+    return data.map(workspace => ({
+      id: workspace.id,
+      name: workspace.name,
+      description: workspace.description || '',
+      userId: workspace.user_id,
+      createdAt: new Date(workspace.created_at),
+      updatedAt: new Date(workspace.updated_at)
+    }));
+  } catch (err) {
+    console.error('Error in fetchUserWorkspaces:', err);
+    throw err;
   }
-
-  return data.map(workspace => ({
-    id: workspace.id,
-    name: workspace.name,
-    description: workspace.description || '',
-    userId: workspace.user_id,
-    createdAt: new Date(workspace.created_at),
-    updatedAt: new Date(workspace.updated_at)
-  }));
 }
 
 export async function createWorkspace(userId: string, name: string, description?: string): Promise<Workspace> {
-  const { data, error } = await supabase
-    .from('workspaces')
-    .insert([{
-      name,
-      description: description || '',
-      user_id: userId
-    }])
-    .select()
-    .single();
+  console.log('Creating workspace:', { userId, name, description });
+  try {
+    const { data, error } = await supabase
+      .from('workspaces')
+      .insert([{
+        name,
+        description: description || '',
+        user_id: userId
+      }])
+      .select()
+      .single();
 
-  if (error) {
-    console.error('Error creating workspace:', error);
-    throw new Error('Failed to create workspace');
+    if (error) {
+      console.error('Error creating workspace:', error);
+      throw new Error('Failed to create workspace');
+    }
+
+    if (!data) {
+      throw new Error('No data returned after creating workspace');
+    }
+
+    console.log('Workspace created:', data);
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description || '',
+      userId: data.user_id,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
+    };
+  } catch (err) {
+    console.error('Error in createWorkspace:', err);
+    throw err;
   }
-
-  return {
-    id: data.id,
-    name: data.name,
-    description: data.description || '',
-    userId: data.user_id,
-    createdAt: new Date(data.created_at),
-    updatedAt: new Date(data.updated_at)
-  };
 }
 
 export async function deleteWorkspace(workspaceId: string): Promise<void> {
@@ -130,6 +153,8 @@ export async function fetchWorkspaceFiles(workspaceId: string): Promise<Workspac
     throw new Error('Failed to fetch files');
   }
 
+  if (!data) return [];
+
   return data.map(file => {
     const { data: { publicUrl } } = supabase.storage
       .from('workspace-files')
@@ -148,15 +173,29 @@ export async function fetchWorkspaceFiles(workspaceId: string): Promise<Workspac
   });
 }
 
-export async function deleteWorkspaceFile(fileId: string, filePath: string): Promise<void> {
-  // Delete from storage
-  const { error: storageError } = await supabase.storage
-    .from('workspace-files')
-    .remove([filePath]);
+export async function deleteWorkspaceFile(fileId: string): Promise<void> {
+  // First get the file to get the path
+  const { data: fileData, error: fileError } = await supabase
+    .from('files')
+    .select('path')
+    .eq('id', fileId)
+    .single();
 
-  if (storageError) {
-    console.error('Error deleting file from storage:', storageError);
-    throw new Error('Failed to delete file from storage');
+  if (fileError) {
+    console.error('Error getting file information:', fileError);
+    throw new Error('Failed to get file information');
+  }
+
+  // Delete from storage if path is found
+  if (fileData && fileData.path) {
+    const { error: storageError } = await supabase.storage
+      .from('workspace-files')
+      .remove([fileData.path]);
+
+    if (storageError) {
+      console.error('Error deleting file from storage:', storageError);
+      // Continue to delete database reference even if storage deletion fails
+    }
   }
 
   // Delete from database
@@ -185,6 +224,8 @@ export async function fetchChatSessions(workspaceId: string): Promise<ChatSessio
     throw new Error('Failed to fetch chat sessions');
   }
 
+  if (!sessionsData) return [];
+
   // For each session, fetch its messages
   const sessionsWithMessages = await Promise.all(
     sessionsData.map(async (session) => {
@@ -199,13 +240,13 @@ export async function fetchChatSessions(workspaceId: string): Promise<ChatSessio
         throw new Error('Failed to fetch chat messages');
       }
 
-      const messages: ChatMessage[] = messagesData.map(msg => ({
+      const messages: ChatMessage[] = messagesData ? messagesData.map(msg => ({
         id: msg.id,
         content: msg.content,
         role: msg.role as "user" | "assistant",
         sessionId: msg.session_id,
         timestamp: new Date(msg.created_at)
-      }));
+      })) : [];
 
       return {
         id: session.id,
@@ -335,6 +376,8 @@ export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[
     console.error('Error fetching chat messages:', error);
     throw new Error('Failed to fetch chat messages');
   }
+
+  if (!data) return [];
 
   return data.map(msg => ({
     id: msg.id,

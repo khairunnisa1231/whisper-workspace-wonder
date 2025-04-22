@@ -41,7 +41,9 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
       
       try {
         setIsLoading(true);
+        console.log('Fetching workspaces for user:', user.id);
         const userWorkspaces = await fetchUserWorkspaces(user.id);
+        console.log('Fetched workspaces:', userWorkspaces);
         setWorkspaces(userWorkspaces);
         
         // Select the first workspace by default
@@ -51,13 +53,14 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
         }
       } catch (error) {
         console.error('Error loading workspaces:', error);
+        setWorkspaces([]); // Set empty array on error to avoid undefined
       } finally {
         setIsLoading(false);
       }
     }
     
     loadWorkspaces();
-  }, [user, onSelect]);
+  }, [user, onSelect, selectedWorkspace]);
   
   const handleSelect = (workspace: Workspace) => {
     setSelectedWorkspace(workspace);
@@ -71,7 +74,9 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
     if (isCreatingWorkspace) {
       if (newWorkspaceName.trim()) {
         try {
+          console.log('Creating new workspace:', newWorkspaceName);
           const newWorkspace = await createWorkspace(user.id, newWorkspaceName);
+          console.log('Workspace created:', newWorkspace);
           setWorkspaces(prev => [...prev, newWorkspace]);
           setSelectedWorkspace(newWorkspace);
           onSelect(newWorkspace.id);
@@ -85,7 +90,7 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
           console.error('Error creating workspace:', error);
           toast({
             title: "Error",
-            description: "Failed to create workspace",
+            description: "Failed to create workspace. Please try again.",
             variant: "destructive"
           });
         }
