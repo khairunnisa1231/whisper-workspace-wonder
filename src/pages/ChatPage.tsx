@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -85,12 +86,21 @@ function ChatPageContent() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    console.log("Messages updated:", messages);
+  }, [messages]);
   
   const handleFileInputChange = async (file: File) => {
-    await handleFileUpload(file);
-    if (!isFileViewerOpen) {
-      setIsFileViewerOpen(true);
-      setIsFileViewerMinimized(false);
+    try {
+      console.log('Uploading file:', file.name);
+      await handleFileUpload(file);
+      if (!isFileViewerOpen) {
+        setIsFileViewerOpen(true);
+        setIsFileViewerMinimized(false);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
     }
   };
 
@@ -149,7 +159,18 @@ function ChatPageContent() {
   const activeSession = sessions.find(s => s.id === activeSessionId);
   
   const handleWorkspaceSelect = (workspaceId: string) => {
+    console.log('Selected workspace:', workspaceId);
     setActiveWorkspace(workspaceId);
+  };
+
+  const handleSendMessageWithLog = async (content: string) => {
+    console.log('Sending message:', content);
+    try {
+      await handleSendMessage(content);
+      console.log('Message sent successfully, messages length:', messages.length + 1);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   if (!isAuthenticated) {
@@ -198,7 +219,7 @@ function ChatPageContent() {
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-semibold">
                 {activeSessionId 
-                  ? sessions.find((s) => s.id === activeSessionId)?.title
+                  ? sessions.find((s) => s.id === activeSessionId)?.title || "Conversation"
                   : "New Conversation"}
               </h1>
               
@@ -272,7 +293,7 @@ function ChatPageContent() {
                   )}
                 </ScrollArea>
                 <ChatInput
-                  onSendMessage={handleSendMessage}
+                  onSendMessage={handleSendMessageWithLog}
                   onFileUpload={handleFileInputChange}
                   isProcessing={isProcessing}
                   recommendedPrompts={recommendedPrompts}

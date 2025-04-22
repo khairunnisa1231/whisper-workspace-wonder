@@ -34,6 +34,7 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   useEffect(() => {
     async function loadWorkspaces() {
@@ -41,6 +42,8 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
       
       try {
         setIsLoading(true);
+        setLoadError(null);
+        
         console.log('Fetching workspaces for user:', user.id);
         const userWorkspaces = await fetchUserWorkspaces(user.id);
         console.log('Fetched workspaces:', userWorkspaces);
@@ -51,16 +54,17 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
           setSelectedWorkspace(userWorkspaces[0]);
           onSelect(userWorkspaces[0].id);
         }
-      } catch (error) {
-        console.error('Error loading workspaces:', error);
+      } catch (err) {
+        console.error('Error loading workspaces:', err);
         setWorkspaces([]); // Set empty array on error to avoid undefined
+        setLoadError("Failed to load workspaces. Database tables might not exist yet.");
       } finally {
         setIsLoading(false);
       }
     }
     
     loadWorkspaces();
-  }, [user, onSelect, selectedWorkspace]);
+  }, [user, onSelect]);
   
   const handleSelect = (workspace: Workspace) => {
     setSelectedWorkspace(workspace);
@@ -125,6 +129,11 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
         <Command>
           <CommandInput placeholder="Search workspace..." />
           <CommandList>
+            {loadError && (
+              <div className="px-2 py-3 text-sm text-red-500">
+                {loadError}
+              </div>
+            )}
             <CommandEmpty>No workspace found.</CommandEmpty>
             <CommandGroup heading="Workspaces">
               {workspaces.map((workspace) => (

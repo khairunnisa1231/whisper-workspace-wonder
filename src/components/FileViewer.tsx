@@ -5,7 +5,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { File, Maximize2, Minimize2, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { WorkspaceFile } from "@/models/workspace";
-import { Toast } from "@/components/ui/toast";
 import { useToast } from "@/hooks/use-toast";
 
 interface FileViewerProps {

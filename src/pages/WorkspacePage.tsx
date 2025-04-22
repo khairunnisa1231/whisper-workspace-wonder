@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -61,7 +60,6 @@ export default function WorkspacePage() {
         const userWorkspaces = await fetchUserWorkspaces(user.id);
         setWorkspaces(userWorkspaces);
         
-        // Load files for each workspace
         const filesMap: Record<string, WorkspaceFile[]> = {};
         for (const workspace of userWorkspaces) {
           const files = await fetchWorkspaceFiles(workspace.id);
@@ -198,9 +196,9 @@ export default function WorkspacePage() {
     }
   };
   
-  const handleDeleteFile = async (workspaceId: string, fileId: string, filePath: string) => {
+  const handleDeleteFile = async (workspaceId: string, fileId: string) => {
     try {
-      await deleteWorkspaceFile(fileId, filePath);
+      await deleteWorkspaceFile(fileId);
       
       setWorkspaceFiles(prev => ({
         ...prev,
@@ -419,7 +417,7 @@ export default function WorkspacePage() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => handleDeleteFile(workspace.id, file.id, file.url)}
+                                onClick={() => handleDeleteFile(workspace.id, file.id)}
                               >
                                 <X className="h-3 w-3" />
                               </Button>

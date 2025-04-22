@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -69,20 +70,26 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     async function loadData() {
       try {
         setIsLoading(true);
+        console.log('Loading data for workspace:', activeWorkspaceId);
         
+        // Fetch chat sessions
         const chatSessions = await fetchChatSessions(activeWorkspaceId);
+        console.log('Fetched chat sessions:', chatSessions);
         setSessions(chatSessions);
         
         if (chatSessions.length > 0) {
           setActiveSessionId(chatSessions[0].id);
           const sessionMessages = await fetchChatMessages(chatSessions[0].id);
+          console.log('Fetched messages for first session:', sessionMessages);
           setMessages(sessionMessages);
         } else {
           setActiveSessionId(null);
           setMessages([]);
         }
         
+        // Fetch workspace files
         const workspaceFiles = await fetchWorkspaceFiles(activeWorkspaceId);
+        console.log('Fetched workspace files:', workspaceFiles);
         setFiles(workspaceFiles);
         
       } catch (err) {
@@ -124,7 +131,9 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         title = initialMessage.slice(0, 30) + (initialMessage.length > 30 ? '...' : '');
       }
       
+      console.log('Creating new session with title:', title);
       const newSession = await createChatSession(activeWorkspaceId, user.id, title);
+      console.log('New session created:', newSession);
       
       if (initialMessage) {
         const userMessage = await addChatMessage(newSession.id, initialMessage, 'user');
@@ -215,9 +224,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       let fileContext = '';
       if (files.length > 0) {
+        console.log('Processing files for context:', files.length);
         const fileContents = await Promise.all(
           files.slice(0, 5).map(async file => {
             try {
+              console.log('Fetching file content for:', file.name);
               const response = await fetch(file.url);
               const blob = await response.blob();
               const fileContent = await readFileContent(new File([blob], file.name, { type: file.type }));
@@ -234,8 +245,10 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       
       console.log('Sending to Gemini with file context:', fileContext ? 'Yes' : 'No');
       const answer = await askGemini(content, fileContext);
+      console.log('Received answer from Gemini');
       
       const aiMessage = await addChatMessage(sessionId, answer, 'assistant');
+      console.log('Added AI message to database');
       
       if (sessionId === activeSessionId) {
         setMessages(prev => [...prev, aiMessage]);
@@ -249,6 +262,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       return aiMessage;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      console.error('Error in handleSendMessageToSession:', errorMessage);
       setError(errorMessage);
       toast({
         title: 'Gemini Error',
@@ -262,14 +276,19 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   };
   
   const handleSendMessage = async (content: string) => {
-    if (!user || !activeWorkspaceId) return;
+    if (!user || !activeWorkspaceId) {
+      console.error('No user or active workspace');
+      return;
+    }
     
     if (!activeSessionId) {
+      console.log('No active session, creating new one');
       await handleNewSession(content);
       return;
     }
     
     try {
+      console.log('Adding user message to session:', activeSessionId);
       const userMessage = await addChatMessage(activeSessionId, content, 'user');
       
       setMessages(prev => [...prev, userMessage]);
@@ -282,10 +301,15 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   };
   
   const handleFileUpload = async (file: File): Promise<void> => {
-    if (!user || !activeWorkspaceId) return;
+    if (!user || !activeWorkspaceId) {
+      console.error('No user or active workspace');
+      return;
+    }
     
     try {
+      console.log('Uploading file:', file.name);
       const uploadedFile = await uploadWorkspaceFile(activeWorkspaceId, user.id, file);
+      console.log('File uploaded successfully:', uploadedFile);
       
       setFiles(prev => [...prev, uploadedFile]);
       
@@ -306,6 +330,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   
   const handleDeleteFile = async (fileId: string): Promise<void> => {
     try {
+      console.log('Deleting file with ID:', fileId);
       await deleteWorkspaceFile(fileId);
       
       setFiles(prev => prev.filter(f => f.id !== fileId));
@@ -325,6 +350,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   };
   
   const setActiveWorkspace = (workspaceId: string) => {
+    console.log('Setting active workspace:', workspaceId);
     setActiveWorkspaceId(workspaceId);
     
     const searchParams = new URLSearchParams(location.search);
