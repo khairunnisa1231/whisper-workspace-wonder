@@ -117,7 +117,7 @@ export default function Login() {
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center mb-8 text-center">
             <MessageSquare className="h-10 w-10 text-secondary mb-2" />
-            <h1 className="text-2xl font-bold">Welcome to ChatWiz</h1>
+            <h1 className="text-2xl font-bold">Welcome to Katagrafy.ai</h1>
             <p className="text-muted-foreground">Your AI-powered conversation assistant</p>
           </div>
           

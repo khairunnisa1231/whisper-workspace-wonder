@@ -114,7 +114,7 @@ export default function ChatPage() {
     const sampleSessions: ChatSession[] = [
       {
         id: "s1",
-        title: "Introduction to ChatWiz",
+        title: "Introduction to Katagrafy.ai",
         lastMessage: "Let me show you how I can help.",
         timestamp: new Date(),
         isPinned: true,

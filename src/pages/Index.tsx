@@ -4,20 +4,20 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Toggle } from "@/components/ui/toggle";
-import { 
-  MessageSquare, 
-  Brain, 
-  Zap, 
-  Layers, 
-  Shield, 
-  Clock, 
+import {
+  MessageSquare,
+  Brain,
+  Zap,
+  Layers,
+  Shield,
+  Clock,
   Check,
   CircleDollarSign,
   Star,
   Folder,
-  ArrowRight 
+  ArrowRight
 } from "lucide-react";
-import { 
+import {
   Card,
   CardContent
 } from "@/components/ui/card";
@@ -34,14 +34,17 @@ const Hero = () => (
     <div className="container px-4 md:px-6">
       <div className="flex flex-col items-center justify-center space-y-10 text-center">
         <div className="space-y-4">
-          <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl/none">
+          <img src="/katagrafy_primary_logo.png" width={"70%"} style={{ display: 'block', margin: '0 auto' }} />
+
+          {/* <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl/none">
             Your AI Powered
             <span className="gradient-text block"> Conversation Assistant</span>
-          </h1>
+          </h1> */}
           <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
             Organize your thoughts, boost productivity, and get instant answers with our
             powerful AI chat assistant and workspace organizer.
           </p>
+
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Link to="/login?tab=signup">
@@ -55,9 +58,25 @@ const Hero = () => (
             </Button>
           </Link>
         </div>
+
+        <p className="mt-2 text-center text-sm text-gray-400 dark:text-gray-500">
+          By clicking "Start now" you agree to our{' '}
+          <a
+            href="/terms-of-service"
+            className="underline hover:text-gray-600 dark:hover:text-gray-300"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Terms & Conditions
+          </a>.
+        </p>
+
+
+
       </div>
+
     </div>
-    
+
     <div className="mt-16 md:mt-24 max-w-5xl mx-auto px-4">
       <div className="rounded-lg overflow-hidden shadow-xl border border-border">
         <div className="bg-card p-2">
@@ -92,7 +111,7 @@ const Hero = () => (
               </div>
               <div className="rounded-lg bg-card p-4 shadow-sm">
                 <p>
-                  Absolutely! I can help you organize your workspace efficiently. 
+                  Absolutely! I can help you organize your workspace efficiently.
                   Let's start by creating folders for your different projects...
                 </p>
               </div>
@@ -108,13 +127,16 @@ const TrustedCompanies = () => (
   <section className="py-12 bg-muted/30">
     <div className="container px-4 md:px-6">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-semibold">Trusted by Industry Leaders</h2>
+        <h2 className="text-2xl font-semibold">Trusted by the Best Companies</h2>
       </div>
       <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
         <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
-          <div className="text-2xl font-bold text-gray-700">Microsoft</div>
+        <img src="/katagrafy_primary_logo.png" width={"30%"} />
+        <img src="/katagrafy_primary_logo.png" width={"30%"} />
+        <img src="/katagrafy_primary_logo.png" width={"30%"} />
+     
         </div>
-        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
+        {/* <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
           <div className="text-2xl font-bold text-gray-700">Google</div>
         </div>
         <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
@@ -125,7 +147,7 @@ const TrustedCompanies = () => (
         </div>
         <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
           <div className="text-2xl font-bold text-gray-700">Spotify</div>
-        </div>
+        </div> */}
       </div>
     </div>
   </section>
@@ -145,7 +167,7 @@ const Features = () => (
           Powerful features designed to enhance your productivity and organization.
         </p>
       </div>
-      
+
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 mt-12">
         <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
           <div className="rounded-full bg-primary/10 p-3 text-primary dark:bg-primary/20">
@@ -156,7 +178,7 @@ const Features = () => (
             Advanced AI to answer questions, generate content, and solve problems.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
           <div className="rounded-full bg-secondary/10 p-3 text-secondary dark:bg-secondary/20">
             <Layers className="h-6 w-6" />
@@ -166,7 +188,7 @@ const Features = () => (
             Organize your conversations in folders and projects for easy access.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
           <div className="rounded-full bg-accent2/10 p-3 text-accent2 dark:bg-accent2/20">
             <Zap className="h-6 w-6" />
@@ -176,7 +198,7 @@ const Features = () => (
             Get immediate answers and assistance for your questions.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
           <div className="rounded-full bg-accent1/10 p-3 text-primary dark:bg-accent1/20">
             <MessageSquare className="h-6 w-6" />
@@ -186,7 +208,7 @@ const Features = () => (
             Work on multiple chat sessions simultaneously and switch between them.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
           <div className="rounded-full bg-accent3/10 p-3 text-accent3 dark:bg-accent3/20">
             <Shield className="h-6 w-6" />
@@ -196,7 +218,7 @@ const Features = () => (
             Your data is private and secure with advanced encryption.
           </p>
         </div>
-        
+
         <div className="flex flex-col items-center space-y-2 rounded-lg border p-6 shadow-sm">
           <div className="rounded-full bg-primary/10 p-3 text-primary dark:bg-primary/20">
             <Clock className="h-6 w-6" />
@@ -240,7 +262,7 @@ const Highlights = () => {
         <div className="absolute top-20 left-10 h-64 w-64 rounded-full bg-primary/5 blur-3xl"></div>
         <div className="absolute bottom-20 right-10 h-64 w-64 rounded-full bg-secondary/5 blur-3xl"></div>
       </div>
-      
+
       <div className="container px-4 md:px-6 relative">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
@@ -277,7 +299,7 @@ const Highlights = () => {
         {/* Desktop Grid */}
         <div className="hidden md:grid md:grid-cols-3 gap-8">
           {highlightsData.map((item, index) => (
-            <div 
+            <div
               key={index}
               className={`rounded-xl p-1 bg-gradient-to-br ${item.bgGradient} group hover:shadow-lg transition-all duration-300 transform hover:scale-105`}
             >
@@ -309,12 +331,12 @@ const Highlights = () => {
 
 const Pricing = () => {
   const [isYearly, setIsYearly] = useState(false);
-  
+
   const getDiscountedPrice = (monthlyPrice: number) => {
     const yearlyPrice = monthlyPrice * 12 * 0.85; // 15% discount
     return (yearlyPrice / 12).toFixed(2);
   };
-  
+
   return (
     <section id="pricing" className="py-20">
       <div className="container px-4 md:px-6">
@@ -326,13 +348,13 @@ const Pricing = () => {
             Simple, Transparent Pricing
           </h2>
           <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-            Choose the plan that works best for you and start chatting with our AI assistant.
+          Signup for your preferred plan and get a 14-day free trial. You can cancel anytime within the trial period and will not be charged. Lets go!
           </p>
-          
+
           <div className="flex items-center space-x-2 mt-6">
             <span className={`text-sm font-medium ${!isYearly ? 'text-primary' : 'text-gray-500'}`}>Monthly</span>
-            <Toggle 
-              pressed={isYearly} 
+            <Toggle
+              pressed={isYearly}
               onPressedChange={setIsYearly}
               aria-label="Toggle billing cycle"
             />
@@ -341,7 +363,7 @@ const Pricing = () => {
             </span>
           </div>
         </div>
-        
+
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 mt-12">
           {/* Starter Plan */}
           <div className="flex flex-col rounded-lg border shadow-sm">
@@ -383,7 +405,7 @@ const Pricing = () => {
               </Link>
             </div>
           </div>
-          
+
           {/* Basic (Recommended) Plan */}
           <div className="flex flex-col rounded-lg border shadow-lg border-secondary relative">
             <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-secondary text-white text-sm font-medium rounded-full">
@@ -427,7 +449,7 @@ const Pricing = () => {
               </Link>
             </div>
           </div>
-          
+
           {/* Pro Plan */}
           <div className="flex flex-col rounded-lg border shadow-sm">
             <div className="p-6">
@@ -477,7 +499,7 @@ const Pricing = () => {
 export default function IndexPage() {
   const featuresRef = useRef<HTMLElement | null>(null);
   const pricingRef = useRef<HTMLElement | null>(null);
-  
+
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
