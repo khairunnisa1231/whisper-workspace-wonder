@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -15,16 +14,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, MessageSquare, Settings, Menu, File } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ChatProvider, useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 
 function ChatPageContent() {
   const { isAuthenticated, user } = useAuth();
@@ -76,6 +70,11 @@ function ChatPageContent() {
     "Help me troubleshoot my code",
     "Write a story about a space traveler"
   ];
+  
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteStatus, setInviteStatus] = useState<null | "success" | "error" | "notfound">(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -173,6 +172,48 @@ function ChatPageContent() {
     }
   };
 
+  const handleInviteUser = async () => {
+    setInviteLoading(true);
+    setInviteStatus(null);
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", inviteEmail.toLowerCase())
+      .maybeSingle();
+
+    if (error) {
+      setInviteStatus("error");
+      setInviteLoading(false);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data || !data.id) {
+      setInviteStatus("notfound");
+      setInviteLoading(false);
+      toast({
+        title: "User Not Found",
+        description: "This email is not registered. Please ask them to sign up.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setInviteStatus("success");
+    setInviteLoading(false);
+    toast({
+      title: "User Invited",
+      description: `Invitation sent to ${inviteEmail}`,
+    });
+    setInviteEmail("");
+    setIsInviteOpen(false);
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -251,6 +292,14 @@ function ChatPageContent() {
                 title="Toggle file viewer"
               >
                 <File className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsInviteOpen(true)}
+                title="Invite User"
+              >
+                Invite
               </Button>
             </div>
           </div>
@@ -359,6 +408,34 @@ function ChatPageContent() {
               setIsBotSettingsOpen(false);
             }}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite User to Workspace</DialogTitle>
+            <DialogDescription>
+              Enter the email address of the user you want to invite to this workspace. Only registered users can be invited.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-3">
+            <Input
+              type="email"
+              value={inviteEmail}
+              placeholder="user@example.com"
+              onChange={e => setInviteEmail(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleInviteUser}
+              disabled={!inviteEmail || inviteLoading}
+            >
+              {inviteLoading ? "Checking..." : "Invite"}
             </Button>
           </DialogFooter>
         </DialogContent>

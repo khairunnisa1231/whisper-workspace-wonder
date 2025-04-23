@@ -28,23 +28,21 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { GeometricArt } from "@/components/GeometricArt";
 
 const Hero = () => (
   <section className="py-20 md:py-32 relative">
     <div className="container px-4 md:px-6">
       <div className="flex flex-col items-center justify-center space-y-10 text-center">
+        <div className="w-full">
+          <GeometricArt />
+        </div>
         <div className="space-y-4">
           <img src="/katagrafy_primary_logo.png" width={"70%"} style={{ display: 'block', margin: '0 auto' }} />
-
-          {/* <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl/none">
-            Your AI Powered
-            <span className="gradient-text block"> Conversation Assistant</span>
-          </h1> */}
           <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
             Organize your thoughts, boost productivity, and get instant answers with our
             powerful AI chat assistant and workspace organizer.
           </p>
-
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Link to="/login?tab=signup">
@@ -58,7 +56,6 @@ const Hero = () => (
             </Button>
           </Link>
         </div>
-
         <p className="mt-2 text-center text-sm text-gray-400 dark:text-gray-500">
           By clicking "Start now" you agree to our{' '}
           <a
@@ -70,13 +67,8 @@ const Hero = () => (
             Terms & Conditions
           </a>.
         </p>
-
-
-
       </div>
-
     </div>
-
     <div className="mt-16 md:mt-24 max-w-5xl mx-auto px-4">
       <div className="rounded-lg overflow-hidden shadow-xl border border-border">
         <div className="bg-card p-2">
@@ -257,7 +249,6 @@ const Highlights = () => {
 
   return (
     <section className="py-24 relative overflow-hidden">
-      {/* Decorative background elements */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 h-64 w-64 rounded-full bg-primary/5 blur-3xl"></div>
         <div className="absolute bottom-20 right-10 h-64 w-64 rounded-full bg-secondary/5 blur-3xl"></div>
@@ -273,7 +264,6 @@ const Highlights = () => {
           </p>
         </div>
 
-        {/* Mobile Carousel */}
         <div className="block md:hidden">
           <Carousel className="w-full max-w-xs mx-auto">
             <CarouselContent>
@@ -296,7 +286,6 @@ const Highlights = () => {
           </Carousel>
         </div>
 
-        {/* Desktop Grid */}
         <div className="hidden md:grid md:grid-cols-3 gap-8">
           {highlightsData.map((item, index) => (
             <div
@@ -316,7 +305,6 @@ const Highlights = () => {
           ))}
         </div>
 
-        {/* Call to action */}
         <div className="mt-16 text-center">
           <Link to="/login?tab=signup">
             <Button size="lg" className="font-medium">
@@ -365,7 +353,6 @@ const Pricing = () => {
         </div>
 
         <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 mt-12">
-          {/* Starter Plan */}
           <div className="flex flex-col rounded-lg border shadow-sm">
             <div className="p-6">
               <h3 className="text-xl font-bold">Starter</h3>
@@ -406,7 +393,6 @@ const Pricing = () => {
             </div>
           </div>
 
-          {/* Basic (Recommended) Plan */}
           <div className="flex flex-col rounded-lg border shadow-lg border-secondary relative">
             <div className="absolute -top-4 left-0 right-0 mx-auto w-max px-4 py-1 bg-secondary text-white text-sm font-medium rounded-full">
               Recommended
@@ -450,7 +436,6 @@ const Pricing = () => {
             </div>
           </div>
 
-          {/* Pro Plan */}
           <div className="flex flex-col rounded-lg border shadow-sm">
             <div className="p-6">
               <h3 className="text-xl font-bold">Pro</h3>
