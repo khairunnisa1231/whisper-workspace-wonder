@@ -1,17 +1,44 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
-import { Menu, X, MessageSquare } from "lucide-react";
+import { Menu, X, MessageSquare, Bell, Check, X as XIcon } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, logout } = useAuth();
+  const [invites, setInvites] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
 
   const isHomePage = location.pathname === "/";
+
+  useEffect(() => {
+    if (user?.id) {
+      // fetch invitations
+      supabase
+        .from("workspace_invites")
+        .select("id, workspace_id, workspace_name")
+        .eq("invitee_id", user.id)
+        .eq("status", "pending")
+        .then(({ data }) => setInvites(data || []));
+    }
+  }, [user]);
+
+  const handleInviteAction = async (inviteId: string, accept: boolean) => {
+    // Accept or reject invite
+    await supabase
+      .from("workspace_invites")
+      .update({ status: accept ? "accepted" : "rejected" })
+      .eq("id", inviteId);
+    setInvites(invites => invites.filter(inv => inv.id !== inviteId));
+    if (accept) {
+      // Add workspace access - assume backend handles this with a trigger or policy
+    }
+  };
 
   const NavLink = ({ to, label }: { to: string; label: string }) => (
     <Link 
@@ -46,7 +73,21 @@ export function Navbar() {
         
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          
+
+          {isAuthenticated && (
+            <Button
+              variant={invites.length > 0 ? "secondary" : "ghost"}
+              size="icon"
+              className="relative"
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <Bell className="h-5 w-5" />
+              {invites.length > 0 && (
+                <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full"></span>
+              )}
+            </Button>
+          )}
+
           {!isAuthenticated ? (
             <div className="hidden md:flex md:items-center md:gap-2">
               <Link to="/login">
@@ -80,6 +121,36 @@ export function Navbar() {
           </Button>
         </div>
       </div>
+      
+      {/* Invite notification dialog */}
+      <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invitations</DialogTitle>
+          </DialogHeader>
+          <div className="py-3">
+            {invites.length === 0 && (
+              <p className="text-muted-foreground text-sm">No new invitations.</p>
+            )}
+            {invites.map((invite: any) => (
+              <div key={invite.id} className="flex justify-between items-center mb-2 border p-2 rounded">
+                <div>
+                  <div className="font-semibold">{invite.workspace_name}</div>
+                  <div className="text-xs text-muted-foreground">You have been invited.</div>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => handleInviteAction(invite.id, true)}>
+                    <Check className="h-4 w-4" /> Accept
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => handleInviteAction(invite.id, false)}>
+                    <XIcon className="h-4 w-4" /> Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
       
       {/* Mobile Navigation */}
       {isMenuOpen && (

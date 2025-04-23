@@ -34,9 +34,6 @@ const Hero = () => (
   <section className="py-20 md:py-32 relative">
     <div className="container px-4 md:px-6">
       <div className="flex flex-col items-center justify-center space-y-10 text-center">
-        <div className="w-full">
-          <GeometricArt />
-        </div>
         <div className="space-y-4">
           <img src="/katagrafy_primary_logo.png" width={"70%"} style={{ display: 'block', margin: '0 auto' }} />
           <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">

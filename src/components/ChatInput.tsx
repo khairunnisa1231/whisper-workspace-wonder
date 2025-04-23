@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -75,8 +74,10 @@ export function ChatInput({
     
     if (!message.trim() || isProcessing) return;
     
+    // Call parent, clear after message will be rendered in parent now
     onSendMessage(message);
-    setMessage("");
+    // Do not clear right away; let parent clear when message sent
+    // setMessage(""); // comment this out & move control to parent if needed
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -172,6 +173,7 @@ export function ChatInput({
   };
   
   return (
+    // ... keep existing form and logic ...
     <form
       onSubmit={handleSubmit}
       className="flex flex-col border-t bg-background p-4 gap-2"
@@ -293,7 +295,6 @@ export function ChatInput({
             onFocus={() => setShowSuggestions(false)}
             onBlur={() => setShowSuggestions(!message.trim())}
           />
-          
           <Button
             type="submit"
             size="icon"

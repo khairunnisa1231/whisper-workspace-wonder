@@ -12,7 +12,6 @@ export function useGemini() {
   const askQuestion = async (prompt: string, fileContext?: string) => {
     setIsLoading(true);
     setError(null);
-    
     try {
       const answer = await askGemini(prompt, fileContext);
       setResponse(answer);
@@ -20,9 +19,13 @@ export function useGemini() {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to get answer';
       setError(errorMessage);
+      let description = errorMessage;
+      if (errorMessage.toLowerCase().includes("api key")) {
+        description = "Gemini API key is missing or invalid. Please check your Gemini key.";
+      }
       toast({
-        title: "Error",
-        description: errorMessage,
+        title: "Gemini Error",
+        description,
         variant: "destructive"
       });
       throw err;
