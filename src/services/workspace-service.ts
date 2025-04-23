@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceFile, ChatSession, ChatMessage } from "@/models/workspace";
 
@@ -39,14 +40,17 @@ export async function fetchUserWorkspaces(userId: string): Promise<Workspace[]> 
 export async function createWorkspace(userId: string, name: string, description?: string): Promise<Workspace> {
   console.log('Creating workspace:', { userId, name, description });
   try {
+    // Make the insert more resilient with explicit column names and values
     const { data, error } = await supabase
       .from('workspaces')
       .insert([{
-        name,
+        name: name,
         description: description || '',
-        user_id: userId
+        user_id: userId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       }])
-      .select()
+      .select('*')
       .single();
 
     if (error) {

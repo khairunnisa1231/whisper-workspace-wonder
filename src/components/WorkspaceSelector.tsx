@@ -57,14 +57,14 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
       } catch (err) {
         console.error('Error loading workspaces:', err);
         setWorkspaces([]); // Set empty array on error to avoid undefined
-        setLoadError("Failed to load workspaces. Database tables might not exist yet.");
+        setLoadError("Failed to load workspaces. Please check the database connection.");
       } finally {
         setIsLoading(false);
       }
     }
     
     loadWorkspaces();
-  }, [user, onSelect]);
+  }, [user, onSelect, selectedWorkspace]);
   
   const handleSelect = (workspace: Workspace) => {
     setSelectedWorkspace(workspace);
@@ -73,34 +73,57 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
   };
   
   const handleCreateWorkspace = async () => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to create a workspace.",
+        variant: "destructive"
+      });
+      return;
+    }
     
     if (isCreatingWorkspace) {
-      if (newWorkspaceName.trim()) {
-        try {
-          console.log('Creating new workspace:', newWorkspaceName);
-          const newWorkspace = await createWorkspace(user.id, newWorkspaceName);
-          console.log('Workspace created:', newWorkspace);
-          setWorkspaces(prev => [...prev, newWorkspace]);
-          setSelectedWorkspace(newWorkspace);
-          onSelect(newWorkspace.id);
-          setNewWorkspaceName("");
-          
-          toast({
-            title: "Workspace Created",
-            description: `Workspace "${newWorkspace.name}" created successfully.`
-          });
-        } catch (error) {
-          console.error('Error creating workspace:', error);
-          toast({
-            title: "Error",
-            description: "Failed to create workspace. Please try again.",
-            variant: "destructive"
-          });
-        }
+      if (!newWorkspaceName.trim()) {
+        toast({
+          title: "Error",
+          description: "Workspace name cannot be empty.",
+          variant: "destructive"
+        });
+        return;
       }
-      setIsCreatingWorkspace(false);
+      
+      try {
+        console.log('Creating new workspace:', newWorkspaceName);
+        const newWorkspace = await createWorkspace(user.id, newWorkspaceName);
+        console.log('Workspace created:', newWorkspace);
+        
+        // Add the new workspace to the local state
+        setWorkspaces(prev => [...prev, newWorkspace]);
+        
+        // Select the newly created workspace
+        setSelectedWorkspace(newWorkspace);
+        onSelect(newWorkspace.id);
+        
+        // Reset the input field
+        setNewWorkspaceName("");
+        
+        toast({
+          title: "Workspace Created",
+          description: `Workspace "${newWorkspace.name}" created successfully.`
+        });
+        
+        // Exit creation mode
+        setIsCreatingWorkspace(false);
+      } catch (error) {
+        console.error('Error creating workspace:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create workspace. Please try again.",
+          variant: "destructive"
+        });
+      }
     } else {
+      // Enter workspace creation mode
       setIsCreatingWorkspace(true);
     }
   };
@@ -172,6 +195,7 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
                   size="sm"
                   className="ml-2"
                   onClick={handleCreateWorkspace}
+                  disabled={!newWorkspaceName.trim()}
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
