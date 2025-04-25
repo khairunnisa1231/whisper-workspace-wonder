@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceFile, ChatSession, ChatMessage } from "@/models/workspace";
 
@@ -106,7 +105,7 @@ export async function uploadWorkspaceFile(
 
   if (uploadError) {
     console.error('Error uploading file:', uploadError);
-    throw new Error('Failed to upload file');
+    throw new Error('Failed to upload file: ' + uploadError.message);
   }
 
   // Get public URL for the file
@@ -121,7 +120,7 @@ export async function uploadWorkspaceFile(
       name: file.name,
       path: filePath,
       type: file.type,
-      size: file.size.toString(),
+      size: file.size,
       user_id: userId,
       workspace_id: workspaceId
     }])
@@ -130,7 +129,7 @@ export async function uploadWorkspaceFile(
 
   if (error) {
     console.error('Error saving file reference:', error);
-    throw new Error('Failed to save file reference');
+    throw new Error('Failed to save file reference: ' + error.message);
   }
 
   return {

@@ -168,6 +168,7 @@ export default function WorkspacePage() {
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        console.log('Uploading file:', file.name, 'to workspace:', workspaceId);
         const uploadedFile = await uploadWorkspaceFile(workspaceId, user.id, file);
         uploadedFiles.push(uploadedFile);
       }
@@ -188,7 +189,7 @@ export default function WorkspacePage() {
       console.error('Error uploading files:', error);
       toast({
         title: "Error",
-        description: "Failed to upload files",
+        description: `Failed to upload files: ${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: "destructive"
       });
     } finally {
