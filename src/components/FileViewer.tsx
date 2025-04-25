@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -71,6 +70,28 @@ export function FileViewer({
             alt={selectedFile.name} 
             className="max-w-full max-h-[400px] object-contain"
           />
+        </div>
+      );
+    }
+    
+    if (selectedFile.type === "application/pdf") {
+      return (
+        <div className="p-4 h-[400px]">
+          <iframe
+            src={selectedFile.url}
+            className="w-full h-full border-0"
+            title={selectedFile.name}
+          />
+        </div>
+      );
+    }
+    
+    if (selectedFile.type.includes('text/') || selectedFile.type === 'application/json') {
+      return (
+        <div className="p-4">
+          <pre className="whitespace-pre-wrap break-words bg-muted p-4 rounded-lg">
+            {selectedFile.content || 'Loading content...'}
+          </pre>
         </div>
       );
     }

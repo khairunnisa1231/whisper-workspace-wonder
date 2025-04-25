@@ -19,6 +19,8 @@ import { ChatProvider, useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
+import { BotSettings } from "@/components/BotSettings";
+import { SettingsProvider } from "@/context/SettingsContext";
 
 function ChatPageContent() {
   const { isAuthenticated, user } = useAuth();
@@ -378,76 +380,22 @@ function ChatPageContent() {
         </div>
       </main>
 
-      <Dialog open={isBotSettingsOpen} onOpenChange={setIsBotSettingsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Bot Settings</DialogTitle>
-            <DialogDescription>
-              Customize the appearance of your AI assistant
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <BotImageSelector 
-                selectedImage={botImageUrl} 
-                onSelectImage={setBotImageUrl} 
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsBotSettingsOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              toast({
-                title: "Settings updated",
-                description: "Bot appearance has been updated successfully."
-              });
-              setIsBotSettingsOpen(false);
-            }}>
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isInviteOpen} onOpenChange={setIsInviteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite User to Workspace</DialogTitle>
-            <DialogDescription>
-              Enter the email address of the user you want to invite to this workspace. Only registered users can be invited.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-3">
-            <Input
-              type="email"
-              value={inviteEmail}
-              placeholder="user@example.com"
-              onChange={e => setInviteEmail(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsInviteOpen(false)}>Cancel</Button>
-            <Button
-              onClick={handleInviteUser}
-              disabled={!inviteEmail || inviteLoading}
-            >
-              {inviteLoading ? "Checking..." : "Invite"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BotSettings 
+        open={isBotSettingsOpen}
+        onOpenChange={setIsBotSettingsOpen}
+        botImageUrl={botImageUrl}
+        onSelectBotImage={setBotImageUrl}
+      />
     </div>
   );
 }
 
 export default function ChatPage() {
   return (
-    <ChatProvider>
-      <ChatPageContent />
-    </ChatProvider>
+    <SettingsProvider>
+      <ChatProvider>
+        <ChatPageContent />
+      </ChatProvider>
+    </SettingsProvider>
   );
 }

@@ -1,171 +1,65 @@
-
-import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
-import { Copy, Check, Volume2 } from "lucide-react";
+import React from 'react';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useSettings } from '@/context/SettingsContext';
 
 interface ChatMessageProps {
   message: {
     id: string;
     content: string;
     role: "user" | "assistant";
+    sessionId: string;
     timestamp: Date;
   };
-  botImage?: string;
+  botImage?: string | null;
   isSelected?: boolean;
-  onSelectMessage?: (id: string, selected: boolean) => void;
+  onSelectMessage?: (messageId: string, selected: boolean) => void;
   selectionMode?: boolean;
 }
 
-export function ChatMessage({ 
-  message, 
-  botImage, 
-  isSelected = false, 
-  onSelectMessage,
-  selectionMode = false
-}: ChatMessageProps) {
-  const isUser = message.role === "user";
-  const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+const fontSizeClasses = {
+  small: 'text-sm',
+  default: 'text-base',
+  large: 'text-lg'
+};
 
-  const copyToClipboard = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(message.content);
-    setCopied(true);
-    
-    toast({
-      title: "Copied to clipboard",
-      description: "Message content has been copied to your clipboard",
-    });
-    
-    setTimeout(() => setCopied(false), 2000);
-  };
-  
-  const speakMessage = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    if ('speechSynthesis' in window) {
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
-      
-      if (isSpeaking) {
-        setIsSpeaking(false);
-        return;
-      }
-      
-      const utterance = new SpeechSynthesisUtterance(message.content);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      
-      setIsSpeaking(true);
-      window.speechSynthesis.speak(utterance);
-    } else {
-      toast({
-        title: "Speech synthesis not supported",
-        description: "Your browser does not support text-to-speech functionality",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleCheckboxChange = (checked: boolean) => {
-    if (onSelectMessage) {
-      onSelectMessage(message.id, checked);
-    }
-  };
+export function ChatMessage({ message, botImage, isSelected, onSelectMessage, selectionMode }: ChatMessageProps) {
+  const { fontSize } = useSettings();
   
   return (
-    <div
-      className={cn(
-        "flex w-full gap-3 p-4 group",
-        isUser ? "justify-end" : "justify-start",
-        isSelected && "bg-secondary/20"
-      )}
-    >
+    <div className={`flex gap-4 ${message.role === 'assistant' ? 'bg-muted/50' : ''} p-4 rounded-lg`}>
       {selectionMode && (
-        <div className="flex items-center justify-center">
-          <Checkbox 
-            checked={isSelected}
-            onCheckedChange={handleCheckboxChange}
-            className="mr-2"
-          />
-        </div>
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => {
+            if (onSelectMessage) {
+              onSelectMessage(message.id, checked === true);
+            }
+          }}
+          className="shrink-0 mt-1.5"
+        />
       )}
-      
-      {!isUser && (
-        <Avatar className="h-8 w-8">
-          {botImage ? (
-            <AvatarImage src={botImage} alt="AI" />
-          ) : (
-            <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
-          )}
+      {message.role === 'assistant' ? (
+        <Avatar>
+          <AvatarImage src={botImage || "/katagrafy-logo.png"} alt="Bot Avatar" />
+          <AvatarFallback>AI</AvatarFallback>
+        </Avatar>
+      ) : (
+        <Avatar>
+          <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+          <AvatarFallback>SC</AvatarFallback>
         </Avatar>
       )}
       
-      <div
-        className={cn(
-          "max-w-[80%] rounded-lg px-4 py-3 relative group",
-          isUser
-            ? "bg-secondary text-secondary-foreground"
-            : "bg-muted"
-        )}
-      >
-        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-        <div
-          className={cn(
-            "mt-1 text-xs flex justify-between items-center",
-            isUser
-              ? "text-secondary-foreground/70"
-              : "text-muted-foreground"
-          )}
+      <div className={`flex-1 space-y-2 overflow-hidden ${fontSizeClasses[fontSize]}`}>
+        <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        <time
+          dateTime={message.timestamp.toISOString()}
+          className="block text-xs text-gray-500 dark:text-gray-400"
         >
-          <span>
-            {message.timestamp.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-          
-          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 rounded-full"
-              onClick={copyToClipboard}
-              title="Copy message"
-            >
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-            </Button>
-            
-            {!isUser && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "h-6 w-6 rounded-full",
-                  isSpeaking && "text-primary"
-                )}
-                onClick={speakMessage}
-                title={isSpeaking ? "Stop speaking" : "Speak message"}
-              >
-                <Volume2 className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-        </div>
+          {message.timestamp.toLocaleTimeString()}
+        </time>
       </div>
-      
-      {isUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-accent2 text-accent2-foreground">
-            {message.role === "user" ? "U" : "AI"}
-          </AvatarFallback>
-        </Avatar>
-      )}
     </div>
   );
 }

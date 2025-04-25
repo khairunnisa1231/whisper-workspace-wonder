@@ -50,6 +50,7 @@ export type Database = {
           title: string
           updated_at: string | null
           user_id: string
+          workspace_id: number | null
         }
         Insert: {
           created_at?: string | null
@@ -59,6 +60,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id: string
+          workspace_id?: number | null
         }
         Update: {
           created_at?: string | null
@@ -68,6 +70,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+          workspace_id?: number | null
         }
         Relationships: [
           {
@@ -85,39 +88,32 @@ export type Database = {
           id: string
           name: string
           path: string
-          session_id: string | null
           size: string
           type: string
           user_id: string
+          workspace_id: number | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           name: string
           path: string
-          session_id?: string | null
           size: string
           type: string
           user_id: string
+          workspace_id?: number | null
         }
         Update: {
           created_at?: string | null
           id?: string
           name?: string
           path?: string
-          session_id?: string | null
           size?: string
           type?: string
           user_id?: string
+          workspace_id?: number | null
         }
         Relationships: [
-          {
-            foreignKeyName: "files_session_id_fkey"
-            columns: ["session_id"]
-            isOneToOne: false
-            referencedRelation: "chat_sessions"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "files_user_id_fkey"
             columns: ["user_id"]
@@ -148,6 +144,33 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: number
+          name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: number
+          name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
