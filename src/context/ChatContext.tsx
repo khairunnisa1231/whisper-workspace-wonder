@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -16,7 +15,7 @@ import {
   deleteWorkspaceFile
 } from '@/services/workspace-service';
 import { askGemini } from '@/integrations/gemini/client';
-import { readFileContent } from '@/utils/readFileContent';
+import { readFileContent, getFileContent } from '@/utils/readFileContent';
 
 interface ChatContextType {
   sessions: ChatSession[];
@@ -228,10 +227,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const fileContents = await Promise.all(
           files.slice(0, 5).map(async file => {
             try {
-              console.log('Fetching file content for:', file.name);
-              const response = await fetch(file.url);
-              const blob = await response.blob();
-              const fileContent = await readFileContent(new File([blob], file.name, { type: file.type }));
+              console.log('Reading content for file:', file.name);
+              const fileContent = await getFileContent(file);
               return `File: ${file.name}\n${fileContent || "Content not available for processing"}\n\n`;
             } catch (error) {
               console.error(`Error reading file ${file.name}:`, error);
@@ -241,6 +238,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         );
         
         fileContext = fileContents.join('\n');
+        console.log('Assembled file context:', fileContext.substring(0, 200) + '...');
       }
       
       console.log('Sending to Gemini with file context:', fileContext ? 'Yes' : 'No');

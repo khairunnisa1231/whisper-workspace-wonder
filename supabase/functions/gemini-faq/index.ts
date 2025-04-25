@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt } = await req.json();
+    const { prompt, fileContext } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -39,7 +39,11 @@ serve(async (req) => {
       );
     }
 
-    console.log("Sending prompt to Gemini API:", prompt.substring(0, 100) + "...");
+    const fullPrompt = fileContext 
+      ? `Context from files:\n${fileContext}\n\nUser question: ${prompt}\nPlease answer based on the provided context.`
+      : prompt;
+
+    console.log("Sending prompt to Gemini API:", fullPrompt.substring(0, 100) + "...");
 
     // Make request to Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`, {
@@ -51,7 +55,7 @@ serve(async (req) => {
         contents: [
           {
             role: "user",
-            parts: [{ text: prompt }]
+            parts: [{ text: fullPrompt }]
           }
         ],
         generationConfig: {
@@ -98,7 +102,6 @@ serve(async (req) => {
       );
     }
     
-    // Extract the text from the response
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 
       "I'm sorry, I couldn't generate an answer at this time. Please try again later.";
 
