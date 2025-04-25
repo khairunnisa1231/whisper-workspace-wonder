@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, SendHorizonal, FileUp, Mic, SmilePlus, LightbulbIcon } from "lucide-react";
+import { useDropzone } from 'react-dropzone';
 
 // Add proper TypeScript interface for SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
@@ -172,12 +173,30 @@ export function ChatInput({
     }
   };
   
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (onFileUpload && acceptedFiles.length > 0) {
+      onFileUpload(acceptedFiles[0]);
+    }
+  }, [onFileUpload]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop,
+    noClick: true,
+    noKeyboard: true
+  });
+
   return (
-    // ... keep existing form and logic ...
     <form
       onSubmit={handleSubmit}
       className="flex flex-col border-t bg-background p-4 gap-2"
+      {...getRootProps()}
     >
+      {isDragActive && (
+        <div className="absolute inset-0 bg-primary/10 backdrop-blur-sm flex items-center justify-center border-2 border-dashed border-primary rounded-lg z-50">
+          <p className="text-lg font-medium">Drop file to upload</p>
+        </div>
+      )}
+      
       {showSuggestions && (
         <div className="flex flex-wrap gap-2 mb-3">
           {recommendedPrompts.slice(0, 4).map((prompt, index) => (
@@ -195,6 +214,7 @@ export function ChatInput({
       )}
       
       <div className="flex items-center gap-2 mb-1">
+        <input {...getInputProps()} />
         <input 
           type="file" 
           ref={fileInputRef} 
