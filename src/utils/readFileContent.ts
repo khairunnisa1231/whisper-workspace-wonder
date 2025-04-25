@@ -19,3 +19,16 @@ export async function readFileContent(file: File): Promise<string | null> {
   // If it's an image or other type, skip or just mention name
   return `(File uploaded: ${file.name}, unsupported for content preview)`;
 }
+
+// This function is now exported from this file
+export async function getFileContent(file: any): Promise<string | null> {
+  try {
+    const response = await fetch(file.url);
+    const blob = await response.blob();
+    const fileContent = await readFileContent(new File([blob], file.name, { type: file.type }));
+    return fileContent;
+  } catch (error) {
+    console.error(`Error reading file ${file.name}:`, error);
+    return `Error reading file ${file.name}`;
+  }
+}

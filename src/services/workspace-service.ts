@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceFile, ChatSession, ChatMessage } from "@/models/workspace";
+import { readFileContent } from "@/utils/readFileContent";
 
 // Workspaces
 export async function fetchUserWorkspaces(userId: string): Promise<Workspace[]> {
@@ -389,16 +390,4 @@ export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[
     sessionId: msg.session_id,
     timestamp: new Date(msg.created_at)
   }));
-}
-
-export async function getFileContent(file: WorkspaceFile): Promise<string | null> {
-  try {
-    const response = await fetch(file.url);
-    const blob = await response.blob();
-    const fileContent = await readFileContent(new File([blob], file.name, { type: file.type }));
-    return fileContent;
-  } catch (error) {
-    console.error(`Error reading file ${file.name}:`, error);
-    return `Error reading file ${file.name}`;
-  }
 }

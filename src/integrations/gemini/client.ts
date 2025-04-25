@@ -14,7 +14,7 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
     
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
-      body: { prompt: fullPrompt },
+      body: { prompt: fullPrompt, fileContext },
     });
 
     if (error) {
