@@ -39,6 +39,7 @@ serve(async (req) => {
       );
     }
 
+    // Prepare a better prompt that instructs Gemini to focus on the file content
     const fullPrompt = fileContext 
       ? `Context from files:\n${fileContext}\n\nUser question: ${prompt}\nPlease answer based on the provided context.`
       : prompt;

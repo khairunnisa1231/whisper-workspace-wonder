@@ -13,6 +13,7 @@ export function useGemini() {
     setIsLoading(true);
     setError(null);
     try {
+      console.log("Asking Gemini with file context:", fileContext ? "Yes" : "No");
       const answer = await askGemini(prompt, fileContext);
       setResponse(answer);
       return answer;
