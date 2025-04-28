@@ -62,6 +62,7 @@ function ChatPageContent() {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // User plan information
   const userPlan = "Basic";
   const promptsRemaining = 85;
   
@@ -232,24 +233,39 @@ function ChatPageContent() {
       <Navbar />
       
       <main className="flex flex-1 overflow-hidden">
-        <aside
-          className={`${isSidebarExpanded ? 'w-72' : 'w-20'} border-r bg-card transition-all duration-300 ${
+        {/* Fixed sidebar */}
+        <div 
+          className={`${isSidebarExpanded ? 'w-72' : 'w-20'} border-r bg-card transition-all duration-300 flex flex-col ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${isMobile ? "absolute z-20 h-[calc(100%-64px)]" : "relative"}`}
         >
-          <div className="p-4 flex flex-col gap-3 border-b">
+          <div className="p-4 border-b">
             <WorkspaceSelector onSelect={handleWorkspaceSelect} />
           </div>
           
-          <ChatHistory
-            sessions={sessions}
-            activeSessionId={activeSessionId}
-            onSelectSession={handleSelectSession}
-            onNewSession={() => handleNewSession()}
-            onDeleteSession={handleDeleteSession}
-            onPinSession={handlePinSession}
-          />
-        </aside>
+          <div className="flex-1 overflow-hidden">
+            <ChatHistory
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              onSelectSession={handleSelectSession}
+              onNewSession={() => handleNewSession()}
+              onDeleteSession={handleDeleteSession}
+              onPinSession={handlePinSession}
+            />
+          </div>
+
+          {/* User plan information */}
+          <div className="p-4 border-t bg-muted/30">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">Plan:</span>
+              <span className="text-sm font-bold">{userPlan}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium">Prompts left:</span>
+              <span className="text-sm font-bold">{promptsRemaining}</span>
+            </div>
+          </div>
+        </div>
         
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b p-4">
@@ -352,7 +368,7 @@ function ChatPageContent() {
                     </div>
                   )}
                 </ScrollArea>
-                <div className="absolute bottom-0 left-0 right-0">
+                <div className="sticky bottom-0 left-0 right-0 bg-background z-10">
                   <ChatInput
                     onSendMessage={handleSendMessageWithLog}
                     onFileUpload={handleFileInputChange}
@@ -380,13 +396,15 @@ function ChatPageContent() {
           </ResizablePanelGroup>
           
           {isFileViewerMinimized && (
-            <FileViewer 
-              files={files}
-              onClose={toggleFileViewer}
-              onDelete={handleDeleteFile}
-              isMinimized={isFileViewerMinimized}
-              onToggleMinimize={toggleFileViewerMinimize}
-            />
+            <div className="absolute bottom-24 right-4 z-20">
+              <FileViewer 
+                files={files}
+                onClose={toggleFileViewer}
+                onDelete={handleDeleteFile}
+                isMinimized={isFileViewerMinimized}
+                onToggleMinimize={toggleFileViewerMinimize}
+              />
+            </div>
           )}
         </div>
       </main>

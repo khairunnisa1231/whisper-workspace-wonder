@@ -4,20 +4,37 @@
  * Used for providing file context to Gemini AI prompts.
  */
 export async function readFileContent(file: File): Promise<string | null> {
-  // Handle only text, pdf, or markdown files for now
-  const mime = file.type;
-  if (mime.startsWith("text/") || mime === "application/json" || mime === "application/xml" || mime === "application/javascript") {
-    return await file.text();
+  try {
+    console.log(`Reading content from file: ${file.name}, type: ${file.type}`);
+    
+    // Handle text, pdf, markdown, code files
+    const mime = file.type;
+    if (mime.startsWith("text/") || 
+        mime === "application/json" || 
+        mime === "application/xml" || 
+        mime === "application/javascript" ||
+        file.name.endsWith('.md') ||
+        file.name.endsWith('.js') ||
+        file.name.endsWith('.ts') ||
+        file.name.endsWith('.tsx') ||
+        file.name.endsWith('.jsx') ||
+        file.name.endsWith('.css')) {
+      const text = await file.text();
+      console.log(`Successfully read text content from ${file.name}, length: ${text.length} chars`);
+      return text;
+    }
+    
+    if (mime === "application/pdf") {
+      // For PDFs we cannot read in the browser directly, so fallback to name only
+      return `(PDF file uploaded: "${file.name}" - Content preview unavailable)`;
+    }
+    
+    // If it's an image or other type, skip or just mention name
+    return `(File uploaded: ${file.name}, unsupported for content preview)`;
+  } catch (error) {
+    console.error(`Error reading file ${file.name}:`, error);
+    return `(Error reading file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'})`;
   }
-  if (mime === "application/pdf") {
-    // For PDFs we cannot read in the browser directly, so fallback to name only
-    return `(PDF file uploaded: "${file.name}" - Content preview unavailable)`;
-  }
-  if (mime === "text/markdown" || file.name.endsWith('.md')) {
-    return await file.text();
-  }
-  // If it's an image or other type, skip or just mention name
-  return `(File uploaded: ${file.name}, unsupported for content preview)`;
 }
 
 /**
@@ -47,7 +64,12 @@ export async function getFileContent(file: any): Promise<string | null> {
         blob.type === "application/json" || 
         blob.type === "application/xml" || 
         blob.type === "application/javascript" ||
-        file.name.endsWith('.md')) {
+        file.name.endsWith('.md') ||
+        file.name.endsWith('.js') ||
+        file.name.endsWith('.ts') ||
+        file.name.endsWith('.tsx') ||
+        file.name.endsWith('.jsx') ||
+        file.name.endsWith('.css')) {
       const text = await blob.text();
       console.log(`Successfully extracted text from ${file.name}, length: ${text.length} chars`);
       return text;
@@ -55,6 +77,10 @@ export async function getFileContent(file: any): Promise<string | null> {
     // For PDFs, just return file name and type
     else if (blob.type === "application/pdf") {
       return `PDF file: ${file.name} (Content preview unavailable in this format)`;
+    }
+    // For images, return a more descriptive message
+    else if (blob.type.startsWith("image/")) {
+      return `Image file: ${file.name} (${blob.type}) - ${blob.size} bytes`;
     }
     // For other types
     else {

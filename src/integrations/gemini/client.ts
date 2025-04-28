@@ -17,16 +17,23 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
         console.log("File context is too large, trimming to 50k chars");
         fileContext = fileContext.substring(0, 50000) + "\n... [Content truncated due to size limitations] ...";
       }
+      
+      // Enhanced logging to diagnose content issues
+      console.log("File context sample:", fileContext.substring(0, 500) + "...");
     }
     
-    // Call the Supabase Edge Function
+    // Call the Supabase Edge Function with improved error handling
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
-      body: { prompt, fileContext },
+      body: { 
+        prompt,
+        fileContext,
+        includeFileContent: !!fileContext // Explicitly signal that file content is included
+      },
     });
 
     if (error) {
       console.error('Error invoking gemini-faq function:', error);
-      throw new Error('Failed to get answer from Gemini AI');
+      throw new Error(`Failed to get answer from Gemini AI: ${error.message}`);
     }
 
     if (!data || !data.answer) {
