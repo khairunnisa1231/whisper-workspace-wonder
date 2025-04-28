@@ -40,9 +40,19 @@ serve(async (req) => {
     }
 
     // Prepare a better prompt that instructs Gemini to focus on the file content
-    const fullPrompt = fileContext 
-      ? `Context from files:\n${fileContext}\n\nUser question: ${prompt}\nPlease answer based on the provided context.`
-      : prompt;
+    let fullPrompt;
+    if (fileContext) {
+      fullPrompt = `I have the following file content that I want you to analyze and use to answer my question.
+      
+File content:
+${fileContext}
+
+My question is: ${prompt}
+
+Based on the file content provided above, please answer my question. If the file content doesn't contain relevant information to answer my question, please let me know.`;
+    } else {
+      fullPrompt = prompt;
+    }
 
     console.log("Sending prompt to Gemini API:", fullPrompt.substring(0, 100) + "...");
 

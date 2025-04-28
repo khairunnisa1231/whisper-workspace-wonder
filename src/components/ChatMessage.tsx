@@ -1,122 +1,183 @@
 
-import React from 'react';
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import React from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useSettings } from '@/context/SettingsContext';
-import { Copy, Speaker } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { cn } from "@/lib/utils";
+import { ChatMessage as ChatMessageType } from "@/models/workspace";
+import { useSettings } from "@/context/SettingsContext";
+import { User } from "lucide-react";
 
 interface ChatMessageProps {
-  message: {
-    id: string;
-    content: string;
-    role: "user" | "assistant";
-    sessionId: string;
-    timestamp: Date;
-  };
+  message: ChatMessageType;
   botImage?: string | null;
   isSelected?: boolean;
   onSelectMessage?: (messageId: string, selected: boolean) => void;
   selectionMode?: boolean;
 }
 
-const fontSizeClasses = {
-  small: 'text-sm',
-  default: 'text-base',
-  large: 'text-lg'
-};
+export function ChatMessage({
+  message,
+  botImage,
+  isSelected = false,
+  onSelectMessage,
+  selectionMode = false,
+}: ChatMessageProps) {
+  const { chatStyle } = useSettings();
+  const isUser = message.role === "user";
+  const messageContent = message.content.trim();
 
-export function ChatMessage({ message, botImage, isSelected, onSelectMessage, selectionMode }: ChatMessageProps) {
-  const { fontSize } = useSettings();
-  const { toast } = useToast();
-  
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(message.content);
-      toast({
-        description: "Message copied to clipboard",
-      });
-    } catch (err) {
-      toast({
-        description: "Failed to copy message",
-        variant: "destructive"
-      });
-    }
-  };
-  
-  const handleSpeak = () => {
-    const utterance = new SpeechSynthesisUtterance(message.content);
-    window.speechSynthesis.speak(utterance);
-  };
-  
-  return (
-    <div className={`flex gap-4 ${message.role === 'assistant' ? 'bg-muted/50' : ''} p-4 rounded-lg`}>
-      {selectionMode && (
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={(checked) => {
-            if (onSelectMessage) {
-              onSelectMessage(message.id, checked === true);
-            }
-          }}
-          className="shrink-0 mt-1.5"
-        />
-      )}
-      
-      <div className={`flex w-full gap-4 ${message.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-        {message.role === 'assistant' ? (
-          <Avatar>
-            <AvatarImage src={botImage || "/katagrafy-logo.png"} alt="Bot Avatar" />
-            <AvatarFallback>AI</AvatarFallback>
-          </Avatar>
-        ) : (
-          <Avatar>
-            <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-            <AvatarFallback>SC</AvatarFallback>
+  if (chatStyle === 'compact') {
+    return (
+      <div className={cn(
+        "flex items-start gap-3 py-4 px-3 group relative",
+        isUser ? "bg-muted/50" : "bg-background"
+      )}>
+        <div className="flex-shrink-0">
+          {isUser ? (
+            <Avatar>
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
+          ) : (
+            <Avatar>
+              {botImage ? (
+                <AvatarImage src={botImage} alt="Bot" />
+              ) : (
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  AI
+                </AvatarFallback>
+              )}
+            </Avatar>
+          )}
+        </div>
+        <div className="flex-1 space-y-1">
+          <p className="text-sm font-semibold">{isUser ? "You" : "Gemini AI"}</p>
+          <div className="text-sm whitespace-pre-wrap">
+            {messageContent.split('\n').map((line, i) => (
+              <React.Fragment key={i}>
+                {line}
+                {i < messageContent.split('\n').length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+        
+        {selectionMode && onSelectMessage && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectMessage(message.id, !!checked)}
+            className="absolute top-4 right-3"
+          />
+        )}
+      </div>
+    );
+  } else if (chatStyle === 'bubble') {
+    return (
+      <div className={cn(
+        "flex items-end gap-3 py-4 px-3 group relative",
+        isUser ? "justify-end" : "justify-start"
+      )}>
+        {!isUser && (
+          <Avatar className="flex-shrink-0 mb-1">
+            {botImage ? (
+              <AvatarImage src={botImage} alt="Bot" />
+            ) : (
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                AI
+              </AvatarFallback>
+            )}
           </Avatar>
         )}
         
-        <div className={`flex-1 space-y-2 overflow-hidden ${fontSizeClasses[fontSize]}`}>
-          <div className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`relative max-w-[80%] group ${
-              message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-            } rounded-lg p-4`}>
-              <p className="whitespace-pre-wrap break-words">{message.content}</p>
-              
-              <div className={`absolute ${
-                message.role === 'user' ? '-left-12' : '-right-12'
-              } top-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1`}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleCopy}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleSpeak}
-                >
-                  <Speaker className="h-4 w-4" />
-                </Button>
-              </div>
+        <div className={cn(
+          "max-w-[80%] p-3 rounded-xl text-sm whitespace-pre-wrap",
+          isUser 
+            ? "bg-primary text-primary-foreground rounded-br-sm" 
+            : "bg-muted rounded-bl-sm"
+        )}>
+          {messageContent.split('\n').map((line, i) => (
+            <React.Fragment key={i}>
+              {line}
+              {i < messageContent.split('\n').length - 1 && <br />}
+            </React.Fragment>
+          ))}
+        </div>
+        
+        {isUser && (
+          <Avatar className="flex-shrink-0 mb-1">
+            <AvatarFallback>
+              <User className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+        )}
+        
+        {selectionMode && onSelectMessage && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={(checked) => onSelectMessage(message.id, !!checked)}
+            className={cn(
+              "absolute top-4",
+              isUser ? "left-3" : "right-3"
+            )}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Default 'standard' style
+  return (
+    <Card
+      className={cn(
+        "relative group border-muted-foreground/20 mb-4",
+        isSelected && "ring-2 ring-primary"
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-col p-4",
+          isUser ? "bg-muted/50" : "bg-background"
+        )}
+      >
+        <div className={cn("flex items-start gap-4", isUser && "flex-row-reverse")}>
+          <div className="flex-shrink-0">
+            {isUser ? (
+              <Avatar>
+                <AvatarFallback>U</AvatarFallback>
+              </Avatar>
+            ) : (
+              <Avatar>
+                {botImage ? (
+                  <AvatarImage src={botImage} alt="Bot" />
+                ) : (
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    AI
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            )}
+          </div>
+          <div className={cn("flex-1", isUser && "text-right")}>
+            <p className="text-sm font-semibold mb-1">{isUser ? "You" : "Gemini AI"}</p>
+            <div className="text-sm whitespace-pre-wrap">
+              {messageContent.split('\n').map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  {i < messageContent.split('\n').length - 1 && <br />}
+                </React.Fragment>
+              ))}
             </div>
           </div>
-          
-          <time
-            dateTime={message.timestamp.toISOString()}
-            className={`block text-xs text-gray-500 dark:text-gray-400 ${
-              message.role === 'user' ? 'text-right' : 'text-left'
-            }`}
-          >
-            {message.timestamp.toLocaleTimeString()}
-          </time>
         </div>
       </div>
-    </div>
+      
+      {selectionMode && onSelectMessage && (
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={(checked) => onSelectMessage(message.id, !!checked)}
+          className="absolute top-4 right-4"
+        />
+      )}
+    </Card>
   );
 }

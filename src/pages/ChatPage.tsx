@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -6,12 +7,12 @@ import { ChatMessage } from "@/components/ChatMessage";
 import { ChatHistory } from "@/components/ChatHistory";
 import { ChatExportButton } from "@/components/ChatExportButton";
 import { FileViewer } from "@/components/FileViewer";
-import { BotImageSelector } from "@/components/BotImageSelector";
+import { BotSettings } from "@/components/BotSettings";
 import { useAuth } from "@/components/AuthProvider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, Settings, Menu, File } from "lucide-react";
+import { Loader2, MessageSquare, Settings, Menu, File, Users, Share2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -19,14 +20,16 @@ import { ChatProvider, useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { BotSettings } from "@/components/BotSettings";
-import { SettingsProvider } from "@/context/SettingsContext";
+import { ChatShareDialog } from "@/components/ChatShareDialog";
+import { SettingsProvider, useSettings } from "@/context/SettingsContext";
+import { ChatStyleSelector } from "@/components/ChatStyleSelector";
 
 function ChatPageContent() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { chatStyle, botImageUrl, setChatStyle } = useSettings();
   
   const {
     sessions,
@@ -46,8 +49,8 @@ function ChatPageContent() {
     setActiveWorkspace
   } = useChat();
   
-  const [botImageUrl, setBotImageUrl] = useState<string | null>(null);
   const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   
   const [isSidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -279,6 +282,16 @@ function ChatPageContent() {
             </div>
             
             <div className="flex items-center gap-2">
+              {activeSession && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsShareDialogOpen(true)}
+                  title="Share chat"
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -295,14 +308,10 @@ function ChatPageContent() {
               >
                 <File className="h-5 w-5" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsInviteOpen(true)}
-                title="Invite User"
-              >
-                Invite
-              </Button>
+              <ChatStyleSelector 
+                currentStyle={chatStyle} 
+                onChange={setChatStyle}
+              />
             </div>
           </div>
           
@@ -328,7 +337,7 @@ function ChatPageContent() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 pb-20">
                       {messages.map((message) => (
                         <ChatMessage 
                           key={message.id} 
@@ -343,12 +352,14 @@ function ChatPageContent() {
                     </div>
                   )}
                 </ScrollArea>
-                <ChatInput
-                  onSendMessage={handleSendMessageWithLog}
-                  onFileUpload={handleFileInputChange}
-                  isProcessing={isProcessing}
-                  recommendedPrompts={recommendedPrompts}
-                />
+                <div className="absolute bottom-0 left-0 right-0">
+                  <ChatInput
+                    onSendMessage={handleSendMessageWithLog}
+                    onFileUpload={handleFileInputChange}
+                    isProcessing={isProcessing}
+                    recommendedPrompts={recommendedPrompts}
+                  />
+                </div>
               </div>
             </ResizablePanel>
             
@@ -384,8 +395,17 @@ function ChatPageContent() {
         open={isBotSettingsOpen}
         onOpenChange={setIsBotSettingsOpen}
         botImageUrl={botImageUrl}
-        onSelectBotImage={setBotImageUrl}
+        onSelectBotImage={() => {}}
       />
+      
+      {activeSession && (
+        <ChatShareDialog
+          open={isShareDialogOpen}
+          onOpenChange={setIsShareDialogOpen}
+          sessionId={activeSession.id}
+          sessionTitle={activeSession.title}
+        />
+      )}
     </div>
   );
 }

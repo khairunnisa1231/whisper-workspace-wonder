@@ -7,19 +7,31 @@ import { supabase } from "@/integrations/supabase/client";
  */
 export async function askGemini(prompt: string, fileContext?: string): Promise<string> {
   try {
-    // Create the full prompt with file context if provided
-    const fullPrompt = fileContext 
-      ? `${prompt}\n\nContext from uploaded files:\n${fileContext}` 
-      : prompt;
+    console.log("Calling Gemini with prompt:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
+    console.log("File context provided:", fileContext ? "Yes" : "No");
+    
+    if (fileContext) {
+      console.log("File context length:", fileContext.length, "characters");
+      // Limit file context if it's too large to avoid token issues
+      if (fileContext.length > 50000) {
+        console.log("File context is too large, trimming to 50k chars");
+        fileContext = fileContext.substring(0, 50000) + "\n... [Content truncated due to size limitations] ...";
+      }
+    }
     
     // Call the Supabase Edge Function
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
-      body: { prompt: fullPrompt, fileContext },
+      body: { prompt, fileContext },
     });
 
     if (error) {
       console.error('Error invoking gemini-faq function:', error);
       throw new Error('Failed to get answer from Gemini AI');
+    }
+
+    if (!data || !data.answer) {
+      console.error('Empty or invalid response from gemini-faq function', data);
+      throw new Error('Received empty response from Gemini AI');
     }
 
     return data.answer;

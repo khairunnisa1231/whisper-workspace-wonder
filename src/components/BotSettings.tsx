@@ -1,16 +1,11 @@
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BotImageSelector } from "@/components/BotImageSelector";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 import { useSettings } from "@/context/SettingsContext";
-import { useToast } from "@/hooks/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ChatStyleSelector, ChatLayoutStyle } from "@/components/ChatStyleSelector";
 
 interface BotSettingsProps {
   open: boolean;
@@ -19,52 +14,63 @@ interface BotSettingsProps {
   onSelectBotImage: (url: string | null) => void;
 }
 
-export function BotSettings({ open, onOpenChange, botImageUrl, onSelectBotImage }: BotSettingsProps) {
-  const { fontSize, setFontSize } = useSettings();
-  const { toast } = useToast();
+export function BotSettings({
+  open,
+  onOpenChange,
+}: BotSettingsProps) {
+  const { chatStyle, setChatStyle, botImageUrl, setBotImageUrl } = useSettings();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Bot Settings</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-6 py-4">
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Bot Appearance</h4>
-            <BotImageSelector selectedImage={botImageUrl} onSelectImage={onSelectBotImage} />
-          </div>
-          
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Font Size</h4>
-            <Select value={fontSize} onValueChange={(value) => setFontSize(value as 'small' | 'default' | 'large')}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="default">Default</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={() => {
-            toast({
-              title: "Settings updated",
-              description: "Your preferences have been saved."
-            });
-            onOpenChange(false);
-          }}>
-            Save Changes
-          </Button>
-        </DialogFooter>
+        <Tabs defaultValue="appearance">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            <TabsTrigger value="personality">Personality</TabsTrigger>
+          </TabsList>
+          <TabsContent value="appearance" className="space-y-4 pt-4">
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Bot Image</h3>
+              <BotImageSelector 
+                selectedImage={botImageUrl} 
+                onSelectImage={setBotImageUrl}
+              />
+            </div>
+            
+            <div className="space-y-4 pt-4">
+              <h3 className="text-sm font-medium">Chat Layout Style</h3>
+              <RadioGroup 
+                value={chatStyle} 
+                onValueChange={(value) => setChatStyle(value as ChatLayoutStyle)}
+                className="grid grid-cols-1 gap-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="standard" id="standard" />
+                  <Label htmlFor="standard">Standard (Left & Right)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="compact" id="compact" />
+                  <Label htmlFor="compact">Compact (All Right)</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="bubble" id="bubble" />
+                  <Label htmlFor="bubble">Bubble (All Right with Bubbles)</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </TabsContent>
+          <TabsContent value="personality" className="space-y-4 pt-4">
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Coming Soon</h3>
+              <p className="text-sm text-muted-foreground">
+                Advanced AI personality settings will be available in a future update.
+              </p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
