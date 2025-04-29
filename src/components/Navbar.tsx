@@ -1,11 +1,45 @@
+
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthProvider";
-import { Menu, X, MessageSquare, Bell, Check, X as XIcon } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  MessageSquare, 
+  Bell, 
+  Check, 
+  ChevronDown, 
+  User, 
+  LogOut,
+  Settings,
+  HelpCircle,
+  Home,
+  FileText,
+  Folder,
+  CircleDollarSign
+} from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { 
+  NavigationMenu, 
+  NavigationMenuContent, 
+  NavigationMenuItem, 
+  NavigationMenuLink, 
+  NavigationMenuList, 
+  NavigationMenuTrigger 
+} from "@/components/ui/navigation-menu";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,8 +47,10 @@ export function Navbar() {
   const [showNotifications, setShowNotifications] = useState(false);
   const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isHomePage = location.pathname === "/";
+  const isLoginPage = location.pathname === "/login";
 
   useEffect(() => {
     if (user?.id) {
@@ -40,15 +76,47 @@ export function Navbar() {
     }
   };
 
-  const NavLink = ({ to, label }: { to: string; label: string }) => (
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
+  const NavLink = ({ to, label, icon: Icon }: { to: string; label: string; icon?: React.ElementType }) => (
     <Link 
       to={to} 
-      className="text-gray-700 hover:text-secondary font-medium dark:text-gray-300 transition-colors"
+      className="flex items-center gap-2 text-gray-700 hover:text-secondary font-medium dark:text-gray-300 transition-colors"
       onClick={() => setIsMenuOpen(false)}
     >
+      {Icon && <Icon className="h-4 w-4" />}
       {label}
     </Link>
   );
+
+  const ListItem = React.forwardRef<
+    React.ElementRef<"a">,
+    React.ComponentPropsWithoutRef<"a">
+  >(({ className, title, children, ...props }, ref) => {
+    return (
+      <li>
+        <NavigationMenuLink asChild>
+          <a
+            ref={ref}
+            className={cn(
+              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+              className
+            )}
+            {...props}
+          >
+            <div className="text-sm font-medium leading-none">{title}</div>
+            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+              {children}
+            </p>
+          </a>
+        </NavigationMenuLink>
+      </li>
+    );
+  });
+  ListItem.displayName = "ListItem";
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -60,15 +128,88 @@ export function Navbar() {
         
         {/* Desktop Navigation */}
         <nav className="hidden md:flex md:flex-1 md:justify-center">
-          <div className="flex gap-6">
-            {isHomePage && (
-              <>
-                <NavLink to="/#features" label="Features" />
-                <NavLink to="/#pricing" label="Pricing" />
-              </>
-            )}
-            <NavLink to="/faq" label="FAQ" />
-          </div>
+          <NavigationMenu>
+            <NavigationMenuList>
+              {isHomePage && (
+                <>
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className="font-medium">Features</NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
+                        <ListItem
+                          href="/#features"
+                          title="AI Assistant"
+                        >
+                          Advanced AI to answer questions, generate content, and solve problems.
+                        </ListItem>
+                        <ListItem
+                          href="/#features"
+                          title="Workspace Organization"
+                        >
+                          Organize your conversations in folders and projects.
+                        </ListItem>
+                        <ListItem
+                          href="/#features"
+                          title="Instant Responses"
+                        >
+                          Get immediate answers and assistance for your questions.
+                        </ListItem>
+                        <ListItem
+                          href="/#features"
+                          title="Privacy Focused"
+                        >
+                          Your data is private and secure with advanced encryption.
+                        </ListItem>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link to="/#pricing" legacyBehavior passHref>
+                      <NavigationMenuLink className="font-medium">
+                        Pricing
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                </>
+              )}
+              
+              {!isHomePage && !isLoginPage && isAuthenticated && (
+                <>
+                  <NavigationMenuItem>
+                    <Link to="/chat" legacyBehavior passHref>
+                      <NavigationMenuLink className={cn(
+                        "font-medium",
+                        location.pathname === "/chat" && "text-secondary"
+                      )}>
+                        Chat
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <Link to="/workspace" legacyBehavior passHref>
+                      <NavigationMenuLink className={cn(
+                        "font-medium",
+                        location.pathname === "/workspace" && "text-secondary"
+                      )}>
+                        Workspace
+                      </NavigationMenuLink>
+                    </Link>
+                  </NavigationMenuItem>
+                </>
+              )}
+              
+              <NavigationMenuItem>
+                <Link to="/faq" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(
+                    "font-medium",
+                    location.pathname === "/faq" && "text-secondary"
+                  )}>
+                    FAQ
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
         </nav>
         
         <div className="flex items-center gap-2">
@@ -98,16 +239,43 @@ export function Navbar() {
               </Link>
             </div>
           ) : (
-            <div className="hidden md:flex md:items-center md:gap-4">
-              <Link to="/chat">
-                <Button variant="outline">Chat</Button>
-              </Link>
-              <Link to="/workspace">
-                <Button variant="outline">Workspace</Button>
-              </Link>
-              <Button variant="ghost" onClick={logout}>
-                Logout
-              </Button>
+            <div className="hidden md:flex md:items-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative flex items-center gap-2 h-10 py-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.avatar_url || ""} />
+                      <AvatarFallback>{user?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline-block">{user?.name || user?.email?.split('@')[0]}</span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{user?.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
           
@@ -143,7 +311,7 @@ export function Navbar() {
                     <Check className="h-4 w-4" /> Accept
                   </Button>
                   <Button size="sm" variant="destructive" onClick={() => handleInviteAction(invite.id, false)}>
-                    <XIcon className="h-4 w-4" /> Reject
+                    <X className="h-4 w-4" /> Reject
                   </Button>
                 </div>
               </div>
@@ -158,11 +326,11 @@ export function Navbar() {
           <div className="container py-4 flex flex-col gap-4">
             {isHomePage && (
               <>
-                <NavLink to="/#features" label="Features" />
-                <NavLink to="/#pricing" label="Pricing" />
+                <NavLink to="/#features" label="Features" icon={MessageSquare} />
+                <NavLink to="/#pricing" label="Pricing" icon={CircleDollarSign} />
               </>
             )}
-            <NavLink to="/faq" label="FAQ" />
+            <NavLink to="/faq" label="FAQ" icon={HelpCircle} />
             
             {!isAuthenticated ? (
               <div className="flex flex-col gap-2 mt-2">
@@ -176,19 +344,26 @@ export function Navbar() {
             ) : (
               <div className="flex flex-col gap-2 mt-2">
                 <Link to="/chat" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="w-full">Chat</Button>
+                  <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Chat
+                  </Button>
                 </Link>
                 <Link to="/workspace" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="w-full">Workspace</Button>
+                  <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                    <Folder className="h-4 w-4" />
+                    Workspace
+                  </Button>
                 </Link>
                 <Button 
                   variant="ghost" 
-                  className="w-full" 
+                  className="w-full flex items-center justify-center gap-2" 
                   onClick={() => {
                     logout();
                     setIsMenuOpen(false);
                   }}
                 >
+                  <LogOut className="h-4 w-4" />
                   Logout
                 </Button>
               </div>

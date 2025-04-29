@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { MessageSquare, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function Login() {
   const [searchParams] = useSearchParams();
@@ -20,6 +21,7 @@ export default function Login() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoginSubmitting, setIsLoginSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   
   // Signup form state
   const [signupName, setSignupName] = useState("");
@@ -28,7 +30,7 @@ export default function Login() {
   const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
   const [isSignupSubmitting, setIsSignupSubmitting] = useState(false);
   
-  const { login, signup, isAuthenticated } = useAuth();
+  const { login, loginWithGoogle, signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -66,6 +68,21 @@ export default function Login() {
       });
     } finally {
       setIsLoginSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleSubmitting(true);
+    try {
+      await loginWithGoogle();
+      // Redirect will happen automatically
+    } catch (error) {
+      toast({
+        title: "Google Login Failed",
+        description: "Could not sign in with Google. Please try again.",
+        variant: "destructive",
+      });
+      setIsGoogleSubmitting(false);
     }
   };
   
@@ -171,6 +188,37 @@ export default function Login() {
                     "Login"
                   )}
                 </Button>
+
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                      OR CONTINUE WITH
+                    </span>
+                  </div>
+                </div>
+
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleGoogleLogin}
+                  disabled={isGoogleSubmitting}
+                >
+                  {isGoogleSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4 mr-2" />
+                      Continue with Google
+                    </>
+                  )}
+                </Button>
               </form>
             </TabsContent>
             
@@ -234,17 +282,48 @@ export default function Login() {
                     "Create Account"
                   )}
                 </Button>
+
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center">
+                    <span className="bg-background px-2 text-xs text-muted-foreground">
+                      OR CONTINUE WITH
+                    </span>
+                  </div>
+                </div>
+
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={handleGoogleLogin}
+                  disabled={isGoogleSubmitting}
+                >
+                  {isGoogleSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4 mr-2" />
+                      Continue with Google
+                    </>
+                  )}
+                </Button>
               </form>
             </TabsContent>
           </Tabs>
           
           <div className="mt-6 text-center text-sm text-muted-foreground">
             By continuing, you agree to our{" "}
-            <a href="#" className="text-secondary hover:underline">
+            <a href="/terms-of-service" className="text-secondary hover:underline">
               Terms of Service
             </a>{" "}
             and{" "}
-            <a href="#" className="text-secondary hover:underline">
+            <a href="/privacy-policy" className="text-secondary hover:underline">
               Privacy Policy
             </a>
             .

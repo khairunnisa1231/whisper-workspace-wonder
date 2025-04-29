@@ -1,439 +1,142 @@
-
-import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
+import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInput } from "@/components/ChatInput";
-import { ChatMessage } from "@/components/ChatMessage";
 import { ChatHistory } from "@/components/ChatHistory";
-import { ChatExportButton } from "@/components/ChatExportButton";
-import { FileViewer } from "@/components/FileViewer";
-import { BotSettings } from "@/components/BotSettings";
-import { useAuth } from "@/components/AuthProvider";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { Loader2, MessageSquare, Settings, Menu, File, Users, Share2 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ChatProvider, useChat } from "@/context/ChatContext";
-import { WorkspaceSelector } from "@/components/WorkspaceSelector";
-import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { ChatShareDialog } from "@/components/ChatShareDialog";
-import { SettingsProvider, useSettings } from "@/context/SettingsContext";
-import { ChatStyleSelector } from "@/components/ChatStyleSelector";
+import { useAuth } from "@/components/AuthProvider";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, Menu as MenuIcon, MessageSquare } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useChatContext } from "@/context/ChatContext";
+import { WorkspaceSelector } from "@/components/WorkspaceSelector"; 
+import { UserPlanInfo } from "@/components/UserPlanInfo";
 
-function ChatPageContent() {
+export default function ChatPage() {
   const { isAuthenticated, user } = useAuth();
-  const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const { chatStyle, botImageUrl, setChatStyle } = useSettings();
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   
-  const {
-    sessions,
-    activeSessionId,
-    activeWorkspaceId,
-    messages,
-    files,
-    isLoading,
-    isProcessing,
-    handleSelectSession,
-    handleNewSession,
-    handleDeleteSession,
-    handlePinSession,
-    handleSendMessage,
-    handleFileUpload,
-    handleDeleteFile,
-    setActiveWorkspace
-  } = useChat();
-  
-  const [isBotSettingsOpen, setIsBotSettingsOpen] = useState(false);
-  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  
-  const [isSidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
-  const [isFileViewerOpen, setIsFileViewerOpen] = useState(false);
-  const [isFileViewerMinimized, setIsFileViewerMinimized] = useState(false);
-  
-  const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
-  const [selectionMode, setSelectionMode] = useState(false);
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // User plan information
-  const userPlan = "Basic";
-  const promptsRemaining = 85;
-  
-  const recommendedPrompts = [
-    "Help me draft an email to my boss",
-    "Explain machine learning concepts to a beginner",
-    "Write a blog post about productivity tips",
-    "Create a workout plan for beginners",
-    "Suggest 5 books to read this summer",
-    "Generate ideas for my marketing campaign",
-    "Help me troubleshoot my code",
-    "Write a story about a space traveler"
-  ];
-  
-  const [isInviteOpen, setIsInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteStatus, setInviteStatus] = useState<null | "success" | "error" | "notfound">(null);
-  const [inviteLoading, setInviteLoading] = useState(false);
-  
+  const { 
+    messages, 
+    sendMessage, 
+    currentSession, 
+    sessions, 
+    isLoadingSessions,
+    activeWorkspace,
+    setActiveWorkspace,
+    createNewSession,
+    loadMessages,
+    isLoadingMessages
+  } = useChatContext();
+
+  useEffect(() => {
+    if (currentSession) {
+      loadMessages(currentSession.id);
+    }
+  }, [currentSession, loadMessages]);
+
+  const handleNewChat = async () => {
+    try {
+      await createNewSession();
+    } catch (error) {
+      toast({
+        title: "Error creating new chat",
+        description: "Failed to create a new chat session. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSelectSession = (sessionId: string) => {
+    loadMessages(sessionId);
+  };
+
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
     }
   }, [isAuthenticated, navigate]);
-  
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    console.log("Messages updated:", messages);
-  }, [messages]);
-  
-  const handleFileInputChange = async (file: File) => {
-    try {
-      console.log('Uploading file:', file.name);
-      await handleFileUpload(file);
-      if (!isFileViewerOpen) {
-        setIsFileViewerOpen(true);
-        setIsFileViewerMinimized(false);
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-    }
-  };
-
-  const handleSelectMessage = (messageId: string, selected: boolean) => {
-    setSelectedMessageIds(prev => {
-      if (selected) {
-        return [...prev, messageId];
-      } else {
-        return prev.filter(id => id !== messageId);
-      }
-    });
-  };
-
-  const toggleSelectionMode = () => {
-    setSelectionMode(prev => !prev);
-    if (selectionMode) {
-      setSelectedMessageIds([]);
-    }
-  };
-
-  const handleExportChats = () => {
-    try {
-      toast({
-        title: "Exporting all chats",
-        description: "Your conversations are being exported.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export failed",
-        description: "There was an error exporting your chats. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!isSidebarOpen);
-  };
-
-  const toggleSidebarExpand = () => {
-    setIsSidebarExpanded(!isSidebarExpanded);
-  };
-
-  const toggleFileViewer = () => {
-    if (isFileViewerMinimized) {
-      setIsFileViewerMinimized(false);
-    } else {
-      setIsFileViewerOpen(!isFileViewerOpen);
-    }
-  };
-
-  const toggleFileViewerMinimize = () => {
-    setIsFileViewerMinimized(!isFileViewerMinimized);
-  };
-
-  const activeSession = sessions.find(s => s.id === activeSessionId);
-  
-  const handleWorkspaceSelect = (workspaceId: string) => {
-    console.log('Selected workspace:', workspaceId);
-    setActiveWorkspace(workspaceId);
-  };
-
-  const handleSendMessageWithLog = async (content: string) => {
-    console.log('Sending message:', content);
-    try {
-      await handleSendMessage(content);
-      console.log('Message sent successfully, messages length:', messages.length + 1);
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
-  };
-
-  const handleInviteUser = async () => {
-    setInviteLoading(true);
-    setInviteStatus(null);
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("email", inviteEmail.toLowerCase())
-      .maybeSingle();
-
-    if (error) {
-      setInviteStatus("error");
-      setInviteLoading(false);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!data || !data.id) {
-      setInviteStatus("notfound");
-      setInviteLoading(false);
-      toast({
-        title: "User Not Found",
-        description: "This email is not registered. Please ask them to sign up.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setInviteStatus("success");
-    setInviteLoading(false);
-    toast({
-      title: "User Invited",
-      description: `Invitation sent to ${inviteEmail}`,
-    });
-    setInviteEmail("");
-    setIsInviteOpen(false);
-  };
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex flex-col h-screen">
       <Navbar />
       
-      <main className="flex flex-1 overflow-hidden">
-        {/* Fixed sidebar */}
-        <div 
-          className={`${isSidebarExpanded ? 'w-72' : 'w-20'} border-r bg-card transition-all duration-300 flex flex-col ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } ${isMobile ? "absolute z-20 h-[calc(100%-64px)]" : "relative"}`}
-        >
-          <div className="p-4 border-b">
-            <WorkspaceSelector onSelect={handleWorkspaceSelect} />
+      <div className="flex-1 relative flex overflow-hidden">
+        {/* Left Sidebar */}
+        <div className={`${isMobile && !isSidebarOpen ? 'hidden' : 'flex'} flex-col w-full md:w-64 lg:w-80 border-r h-full bg-muted/40 dark:bg-muted/20 shrink-0 overflow-hidden`}>
+          <div className="p-3 border-b sticky top-0 bg-muted/40 dark:bg-muted/20 z-10">
+            {/* Workspace selector stays fixed in the sidebar */}
+            <WorkspaceSelector />
           </div>
           
-          <div className="flex-1 overflow-hidden">
-            <ChatHistory
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onSelectSession={handleSelectSession}
-              onNewSession={() => handleNewSession()}
-              onDeleteSession={handleDeleteSession}
-              onPinSession={handlePinSession}
-            />
+          <div className="p-3">
+            {/* Add user plan info component */}
+            <UserPlanInfo className="mb-3" />
+            
+            <Button 
+              onClick={handleNewChat} 
+              variant="outline" 
+              className="w-full mb-2 bg-background hover:bg-accent flex gap-2 items-center justify-center"
+            >
+              <PlusCircle className="h-4 w-4" />
+              New Chat
+            </Button>
           </div>
-
-          {/* User plan information */}
-          <div className="p-4 border-t bg-muted/30">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">Plan:</span>
-              <span className="text-sm font-bold">{userPlan}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Prompts left:</span>
-              <span className="text-sm font-bold">{promptsRemaining}</span>
-            </div>
-          </div>
+          
+          {/* Sessions list */}
+          <ChatSidebar 
+            onSessionSelect={handleSelectSession}
+            onSidebarToggle={() => setIsSidebarOpen(false)}
+          />
         </div>
         
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex items-center justify-between border-b p-4">
+        {/* Main Chat Area - ensure it doesn't get pushed under sidebar */}
+        <div className={`flex-1 flex flex-col h-full relative ${isMobile && isSidebarOpen ? 'hidden' : ''}`}>
+          {/* Show toggle sidebar button on mobile */}
+          {isMobile && !isSidebarOpen && (
             <Button
+              onClick={() => setIsSidebarOpen(true)}
               variant="ghost"
               size="icon"
-              onClick={toggleSidebar}
-              title="Toggle sidebar"
+              className="absolute top-2 left-2 z-50"
             >
-              <Menu className="h-5 w-5" />
+              <MenuIcon className="h-5 w-5" />
             </Button>
-            
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-semibold">
-                {activeSessionId 
-                  ? sessions.find((s) => s.id === activeSessionId)?.title || "Conversation"
-                  : "New Conversation"}
-              </h1>
-              
-              {activeSession && (
-                <ChatExportButton 
-                  sessionId={activeSession.id}
-                  sessionTitle={activeSession.title}
-                  messages={messages}
-                  selectedMessageIds={selectedMessageIds}
-                  onToggleSelectionMode={toggleSelectionMode}
-                  selectionMode={selectionMode}
-                />
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {activeSession && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsShareDialogOpen(true)}
-                  title="Share chat"
-                >
-                  <Share2 className="h-5 w-5" />
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsBotSettingsOpen(true)}
-                title="Bot settings"
-              >
-                <Settings className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleFileViewer}
-                title="Toggle file viewer"
-              >
-                <File className="h-5 w-5" />
-              </Button>
-              <ChatStyleSelector 
-                currentStyle={chatStyle} 
-                onChange={setChatStyle}
-              />
-            </div>
-          </div>
+          )}
           
-          <ResizablePanelGroup direction="horizontal" className="flex-1">
-            <ResizablePanel defaultSize={isFileViewerOpen ? 70 : 100} minSize={40}>
-              <div className="flex flex-col h-full">
-                <ScrollArea className="flex-1 p-4">
-                  {isLoading ? (
-                    <div className="flex h-full items-center justify-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <div className="flex h-full flex-col items-center justify-center text-center">
-                      <div className="rounded-full bg-primary/10 p-4 mb-4">
-                        <MessageSquare className="h-10 w-10 text-primary" />
-                      </div>
-                      <h2 className="text-xl font-semibold mb-2">
-                        Start a New Conversation
-                      </h2>
-                      <p className="text-muted-foreground max-w-md">
-                        Type a message below to start chatting with Katagrafy.ai, your AI-powered
-                        conversation assistant.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 pb-20">
-                      {messages.map((message) => (
-                        <ChatMessage 
-                          key={message.id} 
-                          message={message} 
-                          botImage={botImageUrl}
-                          isSelected={selectedMessageIds.includes(message.id)}
-                          onSelectMessage={handleSelectMessage}
-                          selectionMode={selectionMode}
-                        />
-                      ))}
-                      <div ref={messagesEndRef} />
-                    </div>
-                  )}
-                </ScrollArea>
-                <div className="sticky bottom-0 left-0 right-0 bg-background z-10">
-                  <ChatInput
-                    onSendMessage={handleSendMessageWithLog}
-                    onFileUpload={handleFileInputChange}
-                    isProcessing={isProcessing}
-                    recommendedPrompts={recommendedPrompts}
-                  />
+          {/* Ensure the chat history and input are properly positioned */}
+          <div className="flex-1 overflow-hidden relative flex flex-col">
+            {/* Show empty state or chat history */}
+            {!currentSession ? (
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="text-center max-w-md">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h2 className="text-2xl font-bold mb-2">Welcome to Katagrafy.ai</h2>
+                  <p className="text-muted-foreground mb-4">
+                    Start a new conversation or select an existing one to chat with our AI assistant.
+                  </p>
+                  <Button onClick={handleNewChat}>
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    New Conversation
+                  </Button>
                 </div>
               </div>
-            </ResizablePanel>
-            
-            {isFileViewerOpen && !isFileViewerMinimized && (
+            ) : (
               <>
-                <ResizableHandle withHandle />
-                <ResizablePanel defaultSize={30} minSize={20}>
-                  <FileViewer 
-                    files={files}
-                    onClose={toggleFileViewer}
-                    onDelete={handleDeleteFile}
-                    isMinimized={isFileViewerMinimized}
-                    onToggleMinimize={toggleFileViewerMinimize}
-                  />
-                </ResizablePanel>
+                <ChatHistory />
+                <ChatInput />
               </>
             )}
-          </ResizablePanelGroup>
-          
-          {isFileViewerMinimized && (
-            <div className="absolute bottom-24 right-4 z-20">
-              <FileViewer 
-                files={files}
-                onClose={toggleFileViewer}
-                onDelete={handleDeleteFile}
-                isMinimized={isFileViewerMinimized}
-                onToggleMinimize={toggleFileViewerMinimize}
-              />
-            </div>
-          )}
+          </div>
         </div>
-      </main>
-
-      <BotSettings 
-        open={isBotSettingsOpen}
-        onOpenChange={setIsBotSettingsOpen}
-        botImageUrl={botImageUrl}
-        onSelectBotImage={() => {}}
-      />
+      </div>
       
-      {activeSession && (
-        <ChatShareDialog
-          open={isShareDialogOpen}
-          onOpenChange={setIsShareDialogOpen}
-          sessionId={activeSession.id}
-          sessionTitle={activeSession.title}
-        />
-      )}
+      <ChatShareDialog />
     </div>
-  );
-}
-
-export default function ChatPage() {
-  return (
-    <SettingsProvider>
-      <ChatProvider>
-        <ChatPageContent />
-      </ChatProvider>
-    </SettingsProvider>
   );
 }

@@ -9,28 +9,41 @@ export async function readFileContent(file: File): Promise<string | null> {
     
     // Handle text, pdf, markdown, code files
     const mime = file.type;
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
+    // Text-based files
     if (mime.startsWith("text/") || 
         mime === "application/json" || 
         mime === "application/xml" || 
         mime === "application/javascript" ||
-        file.name.endsWith('.md') ||
-        file.name.endsWith('.js') ||
-        file.name.endsWith('.ts') ||
-        file.name.endsWith('.tsx') ||
-        file.name.endsWith('.jsx') ||
-        file.name.endsWith('.css')) {
+        mime === "text/markdown" ||
+        extension === 'md' ||
+        extension === 'js' ||
+        extension === 'ts' ||
+        extension === 'tsx' ||
+        extension === 'jsx' ||
+        extension === 'css' ||
+        extension === 'html' ||
+        extension === 'json' ||
+        extension === 'csv' ||
+        extension === 'txt') {
       const text = await file.text();
       console.log(`Successfully read text content from ${file.name}, length: ${text.length} chars`);
       return text;
     }
     
-    if (mime === "application/pdf") {
+    if (mime === "application/pdf" || extension === 'pdf') {
       // For PDFs we cannot read in the browser directly, so fallback to name only
       return `(PDF file uploaded: "${file.name}" - Content preview unavailable)`;
     }
     
-    // If it's an image or other type, skip or just mention name
-    return `(File uploaded: ${file.name}, unsupported for content preview)`;
+    // If it's an image, return appropriate message
+    if (mime.startsWith("image/")) {
+      return `(Image file uploaded: ${file.name} - [${mime}] - ${Math.round(file.size/1024)}KB)`;
+    }
+    
+    // For other files
+    return `(File uploaded: ${file.name}, type: ${mime || 'unknown'}, size: ${Math.round(file.size/1024)}KB)`;
   } catch (error) {
     console.error(`Error reading file ${file.name}:`, error);
     return `(Error reading file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'})`;
@@ -59,32 +72,39 @@ export async function getFileContent(file: any): Promise<string | null> {
     const blob = await response.blob();
     console.log(`Successfully fetched file ${file.name}, size: ${blob.size} bytes, type: ${blob.type}`);
     
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    
     // For text files, extract and return content
     if (blob.type.startsWith("text/") || 
         blob.type === "application/json" || 
         blob.type === "application/xml" || 
         blob.type === "application/javascript" ||
-        file.name.endsWith('.md') ||
-        file.name.endsWith('.js') ||
-        file.name.endsWith('.ts') ||
-        file.name.endsWith('.tsx') ||
-        file.name.endsWith('.jsx') ||
-        file.name.endsWith('.css')) {
+        blob.type === "text/markdown" ||
+        extension === 'md' ||
+        extension === 'js' ||
+        extension === 'ts' ||
+        extension === 'tsx' ||
+        extension === 'jsx' ||
+        extension === 'css' ||
+        extension === 'html' ||
+        extension === 'json' ||
+        extension === 'csv' ||
+        extension === 'txt') {
       const text = await blob.text();
       console.log(`Successfully extracted text from ${file.name}, length: ${text.length} chars`);
       return text;
     } 
     // For PDFs, just return file name and type
-    else if (blob.type === "application/pdf") {
+    else if (blob.type === "application/pdf" || extension === 'pdf') {
       return `PDF file: ${file.name} (Content preview unavailable in this format)`;
     }
     // For images, return a more descriptive message
     else if (blob.type.startsWith("image/")) {
-      return `Image file: ${file.name} (${blob.type}) - ${blob.size} bytes`;
+      return `Image file: ${file.name} (${blob.type}) - ${Math.round(blob.size/1024)}KB`;
     }
     // For other types
     else {
-      return `File: ${file.name} (${blob.type}) - ${blob.size} bytes`;
+      return `File: ${file.name} (${blob.type || 'unknown'}) - ${Math.round(blob.size/1024)}KB`;
     }
   } catch (error) {
     console.error(`Error reading file ${file.name}:`, error);
