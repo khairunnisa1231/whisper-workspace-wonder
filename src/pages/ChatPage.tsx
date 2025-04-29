@@ -12,6 +12,8 @@ import { PlusCircle, Menu as MenuIcon, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChat } from "@/context/ChatContext";
+import { WorkspaceSelector } from "@/components/WorkspaceSelector";
+import { UserPlanInfo } from "@/components/UserPlanInfo";
 
 export default function ChatPage() {
   const { isAuthenticated, user } = useAuth();
