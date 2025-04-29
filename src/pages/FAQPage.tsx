@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { 
@@ -8,204 +8,257 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+  Card,
+  CardContent
 } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { useGemini } from "@/hooks/use-gemini";
-import { Loader2, MessageSquare, Search } from "lucide-react";
+import { 
+  MessageSquare, 
+  ShieldCheck, 
+  CreditCard, 
+  Layers, 
+  Settings, 
+  HeadphonesIcon,
+  ChevronDown
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// Sample FAQ data
+// FAQ data organized by categories
+const faqCategories = [
+  {
+    id: "all",
+    label: "All Questions",
+    icon: MessageSquare
+  },
+  {
+    id: "general",
+    label: "General",
+    icon: MessageSquare
+  },
+  {
+    id: "security",
+    label: "Security",
+    icon: ShieldCheck
+  },
+  {
+    id: "billing",
+    label: "Billing",
+    icon: CreditCard
+  },
+  {
+    id: "features",
+    label: "Features",
+    icon: Layers
+  },
+  {
+    id: "technical",
+    label: "Technical",
+    icon: Settings
+  },
+  {
+    id: "support",
+    label: "Support",
+    icon: HeadphonesIcon
+  }
+];
+
+// Featured FAQ items to be displayed at the top
+const featuredFaqs = [
+  {
+    id: "what-is",
+    question: "What is Katagrafy.ai?",
+    answer: "Katagrafy.ai is an AI-powered conversation assistant that helps you organize thoughts, boost productivity, and get instant answers to your questions.",
+    category: "general",
+    icon: MessageSquare,
+    color: "border-primary/20"
+  },
+  {
+    id: "get-started",
+    question: "How do I get started with Katagrafy.ai?",
+    answer: "Sign up for an account, explore the interface, and start a new conversation with our AI assistant. You can ask questions, request information, or use our tools to help organize your workspace.",
+    category: "general",
+    icon: MessageSquare,
+    color: "border-primary/20"
+  },
+  {
+    id: "data-secure",
+    question: "Is my data secure?",
+    answer: "Yes, we take security seriously. All your data is encrypted both in transit and at rest. We employ industry-standard security practices to protect your information.",
+    category: "security",
+    icon: ShieldCheck,
+    color: "border-secondary/20"
+  }
+];
+
+// All FAQ items organized by category
 const faqItems = [
   {
-    id: "faq-1",
-    question: "What is Katagrafy.ai?",
-    answer: "Katagrafy.ai is an AI-powered conversation assistant that helps you organize your thoughts, boost productivity, and get instant answers to your questions.",
+    id: "billing-work",
+    question: "How does billing work?",
+    answer: "We offer monthly and annual subscription plans. You'll be billed at the start of each billing cycle. You can upgrade, downgrade, or cancel your subscription at any time through the account settings page.",
+    category: "billing"
   },
   {
-    id: "faq-2",
-    question: "How do I get started with Katagrafy.ai?",
-    answer: "To get started, simply sign up for an account, choose a plan that fits your needs, and start chatting with our AI assistant. You can ask questions, upload documents, and organize your conversations in folders.",
+    id: "payment-methods",
+    question: "What payment methods do you accept?",
+    answer: "We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and select regional payment methods. For enterprise customers, we also offer invoicing options.",
+    category: "billing"
   },
   {
-    id: "faq-3",
-    question: "What plans are available?",
-    answer: "We offer three plans: Starter, Basic, and Pro. Each plan comes with different features and usage limits. You can view the details on our pricing page.",
+    id: "free-trial",
+    question: "Is there a free trial?",
+    answer: "Yes, we offer a 14-day free trial on all plans. No credit card is required to start your trial. You'll be notified before your trial ends so you can decide if you want to continue with a paid subscription.",
+    category: "billing"
   },
   {
-    id: "faq-4",
-    question: "Can I upload documents?",
-    answer: "Yes, all plans allow you to upload documents. The file size and number of documents vary by plan. Starter allows 5 documents up to 25MB each, Basic allows 10 documents up to 50MB each, and Pro allows 25 documents up to 100MB each.",
+    id: "data-privacy",
+    question: "How is my data handled?",
+    answer: "Your data is stored securely in encrypted form. We do not sell or share your data with third parties. You maintain ownership of all your content, and you can export or delete your data at any time.",
+    category: "security"
   },
   {
-    id: "faq-5",
-    question: "How does AI customization work?",
-    answer: "AI customization allows you to personalize how the AI responds to your prompts. You can adjust the tone, style, and focus areas of the AI to better match your needs. This feature is available on Basic and Pro plans.",
+    id: "access-controls",
+    question: "Can I control who accesses my workspaces?",
+    answer: "Yes, you have full control over who can access your workspaces. You can invite team members with different permission levels and revoke access at any time.",
+    category: "security"
+  },
+  {
+    id: "file-upload",
+    question: "What file types can I upload?",
+    answer: "Katagrafy.ai supports a wide range of file types including PDFs, Word documents, Excel spreadsheets, text files, images, and more. The maximum file size depends on your subscription plan.",
+    category: "features"
+  },
+  {
+    id: "ai-models",
+    question: "What AI models power Katagrafy.ai?",
+    answer: "Katagrafy.ai is powered by state-of-the-art language models, including Google Gemini and other specialized models tailored to specific tasks. We continuously update our AI technology to provide the best experience.",
+    category: "technical"
+  },
+  {
+    id: "api-access",
+    question: "Do you provide API access?",
+    answer: "Yes, enterprise and pro plans include API access that allows you to integrate Katagrafy.ai's capabilities into your own applications and workflows. Comprehensive documentation is available for developers.",
+    category: "technical"
+  },
+  {
+    id: "contact-support",
+    question: "How can I contact support?",
+    answer: "You can reach our support team through the in-app chat, by emailing support@katagrafy.ai, or by scheduling a call through the support page. Enterprise customers have access to dedicated support channels.",
+    category: "support"
   }
 ];
 
 export default function FAQPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [customQuestion, setCustomQuestion] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
-  const { toast } = useToast();
-  const aiResponseRef = useRef<HTMLDivElement>(null);
-  const { askQuestion, isLoading } = useGemini();
+  const [activeTab, setActiveTab] = useState("all");
 
-  // Filter FAQ items based on search query
-  const filteredFAQs = searchQuery 
-    ? faqItems.filter(item => 
-        item.question.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        item.answer.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : faqItems;
-
-  // Handle custom question submission
-  const handleCustomQuestionSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!customQuestion.trim()) {
-      toast({
-        title: "Please enter a question",
-        description: "Your question cannot be empty.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setAiResponse("");
-
-    try {
-      const answer = await askQuestion(customQuestion);
-      setAiResponse(answer);
-      
-      // Scroll to answer
-      setTimeout(() => {
-        aiResponseRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    } catch (error) {
-      console.error('Error getting answer:', error);
-      // Error handling is done in the hook
-    }
-  };
+  // Filter FAQ items based on the active tab
+  const filteredFaqs = activeTab === "all" 
+    ? faqItems 
+    : faqItems.filter(item => item.category === activeTab);
 
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
       <main className="flex-1">
-        <section className="py-12 md:py-16 lg:py-20 bg-muted/30">
+        {/* Hero Section */}
+        <section className="py-12 md:py-16 lg:py-20 bg-background">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center max-w-3xl mx-auto">
               <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
                 Frequently Asked Questions
               </h1>
               <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                Find answers to common questions about Katagrafy.ai and its features
+                Find answers to common questions about Katagrafy.ai. If you can't find what you're looking for, feel free to contact our support team.
               </p>
-              <div className="w-full max-w-xl flex items-center space-x-2 relative">
-                <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search for a question..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-                {searchQuery && (
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="absolute right-2" 
-                    onClick={() => setSearchQuery("")}
-                  >
-                    Clear
-                  </Button>
-                )}
-              </div>
             </div>
           </div>
         </section>
         
-        <section className="py-8">
+        {/* Category Tabs */}
+        <section className="py-6">
           <div className="container px-4 md:px-6">
-            <div className="mx-auto max-w-3xl space-y-4">
-              {filteredFAQs.length > 0 ? (
+            <Tabs 
+              defaultValue="all" 
+              value={activeTab} 
+              onValueChange={setActiveTab}
+              className="w-full"
+            >
+              <div className="overflow-x-auto pb-2">
+                <TabsList className="inline-flex w-auto p-1 h-auto">
+                  {faqCategories.map((category) => (
+                    <TabsTrigger 
+                      key={category.id} 
+                      value={category.id}
+                      className="flex items-center gap-2 px-4 py-2 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                    >
+                      <category.icon className="h-4 w-4" />
+                      <span>{category.label}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+
+              {/* Featured FAQs */}
+              {activeTab === "all" && (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
+                  {featuredFaqs.map((faq) => (
+                    <Card key={faq.id} className={cn("overflow-hidden border-l-4", faq.color)}>
+                      <CardContent className="p-6">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="shrink-0">
+                            <faq.icon className="h-6 w-6 text-primary" />
+                          </div>
+                          <h3 className="text-xl font-semibold">{faq.question}</h3>
+                        </div>
+                        <p className="text-muted-foreground">{faq.answer}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {/* All FAQs by category */}
+              <div className="mt-12">
+                <h2 className="text-2xl font-bold mb-6">More Questions</h2>
                 <Accordion type="single" collapsible className="w-full">
-                  {filteredFAQs.map((item) => (
-                    <AccordionItem key={item.id} value={item.id}>
-                      <AccordionTrigger className="text-lg font-medium text-left">
-                        {item.question}
+                  {filteredFaqs.map((item) => (
+                    <AccordionItem key={item.id} value={item.id} className="border-b border-border/40">
+                      <AccordionTrigger className="flex items-center gap-4 text-lg font-medium py-4">
+                        {item.category === 'billing' && <CreditCard className="h-5 w-5 text-pink-500" />}
+                        {item.category === 'security' && <ShieldCheck className="h-5 w-5 text-yellow-500" />}
+                        {item.category === 'features' && <Layers className="h-5 w-5 text-blue-500" />}
+                        {item.category === 'technical' && <Settings className="h-5 w-5 text-purple-500" />}
+                        {item.category === 'support' && <HeadphonesIcon className="h-5 w-5 text-green-500" />}
+                        {item.category === 'general' && <MessageSquare className="h-5 w-5 text-primary" />}
+                        <span className="flex-1 text-left">{item.question}</span>
+                        <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200" />
                       </AccordionTrigger>
-                      <AccordionContent className="text-gray-600 dark:text-gray-300">
+                      <AccordionContent className="py-4 pl-12 text-gray-600 dark:text-gray-300">
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>
                   ))}
                 </Accordion>
-              ) : (
-                <div className="text-center py-10">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No FAQ matches your search. Try asking your question below.
-                  </p>
-                </div>
-              )}
-            </div>
+              </div>
+            </Tabs>
           </div>
         </section>
-        
-        <section className="py-8 bg-muted/20">
+
+        {/* Contact Support Section */}
+        <section className="py-12 bg-muted/20">
           <div className="container px-4 md:px-6">
-            <div className="mx-auto max-w-3xl">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ask Gemini AI</CardTitle>
-                  <CardDescription>
-                    Can't find what you're looking for? Ask our AI assistant powered by Google Gemini.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleCustomQuestionSubmit} className="space-y-4">
-                    <Textarea
-                      placeholder="Type your question here..."
-                      value={customQuestion}
-                      onChange={(e) => setCustomQuestion(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                    <Button type="submit" disabled={isLoading || !customQuestion.trim()}>
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Getting Answer...
-                        </>
-                      ) : (
-                        <>
-                          <MessageSquare className="mr-2 h-4 w-4" />
-                          Get Answer
-                        </>
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-                {aiResponse && (
-                  <CardFooter className="flex flex-col items-start" ref={aiResponseRef}>
-                    <div className="pt-4 border-t w-full">
-                      <h3 className="font-semibold mb-2">Answer:</h3>
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        {aiResponse.split('\n').map((paragraph, idx) => (
-                          <p key={idx} className="mb-2">{paragraph}</p>
-                        ))}
-                      </div>
-                    </div>
-                  </CardFooter>
-                )}
-              </Card>
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="text-2xl font-bold mb-4">Still have questions?</h2>
+              <p className="mb-6 text-muted-foreground">Our support team is here to help with any questions you might have.</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90">
+                  Contact Support
+                </a>
+                <a href="#" className="inline-flex items-center justify-center px-6 py-3 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">
+                  View Documentation
+                </a>
+              </div>
             </div>
           </div>
         </section>
