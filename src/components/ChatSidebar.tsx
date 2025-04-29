@@ -30,6 +30,7 @@ interface ChatSidebarProps {
   userPlan: string;
   promptsRemaining?: number;
   onToggleSidebar?: () => void;
+  onWorkspaceSelect?: (workspaceId: string) => void;
 }
 
 export function ChatSidebar({
@@ -42,7 +43,8 @@ export function ChatSidebar({
   onExportChats,
   userPlan,
   promptsRemaining = 100,
-  onToggleSidebar
+  onToggleSidebar,
+  onWorkspaceSelect
 }: ChatSidebarProps) {
   const [hoveredSession, setHoveredSession] = useState<string | null>(null);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
@@ -60,7 +62,9 @@ export function ChatSidebar({
   
   const handleWorkspaceSelect = (workspaceId: string) => {
     console.log("Selected workspace: ", workspaceId);
-    // In a real app, you would filter chats by workspace
+    if (onWorkspaceSelect) {
+      onWorkspaceSelect(workspaceId);
+    }
   };
   
   const handleExport = () => {
@@ -69,6 +73,9 @@ export function ChatSidebar({
     
     // Implement export functionality here
     console.log("Exporting selected chats:", sessionsToExport);
+    
+    // Call the parent export function
+    onExportChats();
     
     // Close dialog and reset selections
     setIsExportDialogOpen(false);

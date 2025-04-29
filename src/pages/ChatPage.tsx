@@ -16,15 +16,16 @@ import { Loader2, MessageSquare, Settings, Menu, File, Users, Share2 } from "luc
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { ChatProvider, useChat } from "@/context/ChatContext";
+import { useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { ChatShareDialog } from "@/components/ChatShareDialog";
-import { SettingsProvider, useSettings } from "@/context/SettingsContext";
+import { useSettings } from "@/context/SettingsContext";
 import { ChatStyleSelector } from "@/components/ChatStyleSelector";
+import { ChatSidebar } from "@/components/ChatSidebar";
 
-function ChatPageContent() {
+function ChatPage() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -239,32 +240,20 @@ function ChatPageContent() {
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           } ${isMobile ? "absolute z-20 h-[calc(100%-64px)]" : "relative"}`}
         >
-          <div className="p-4 border-b">
-            <WorkspaceSelector onSelect={handleWorkspaceSelect} />
-          </div>
-          
-          <div className="flex-1 overflow-hidden">
-            <ChatHistory
-              sessions={sessions}
-              activeSessionId={activeSessionId}
-              onSelectSession={handleSelectSession}
-              onNewSession={() => handleNewSession()}
-              onDeleteSession={handleDeleteSession}
-              onPinSession={handlePinSession}
-            />
-          </div>
-
-          {/* User plan information */}
-          <div className="p-4 border-t bg-muted/30">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium">Plan:</span>
-              <span className="text-sm font-bold">{userPlan}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-medium">Prompts left:</span>
-              <span className="text-sm font-bold">{promptsRemaining}</span>
-            </div>
-          </div>
+          {/* Use ChatSidebar component instead of inline sidebar */}
+          <ChatSidebar
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onSelectSession={handleSelectSession}
+            onNewSession={() => handleNewSession()}
+            onDeleteSession={handleDeleteSession}
+            onPinSession={handlePinSession}
+            onExportChats={handleExportChats}
+            userPlan={userPlan}
+            promptsRemaining={promptsRemaining}
+            onToggleSidebar={toggleSidebar}
+            onWorkspaceSelect={handleWorkspaceSelect}
+          />
         </div>
         
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -428,12 +417,4 @@ function ChatPageContent() {
   );
 }
 
-export default function ChatPage() {
-  return (
-    <SettingsProvider>
-      <ChatProvider>
-        <ChatPageContent />
-      </ChatProvider>
-    </SettingsProvider>
-  );
-}
+export default ChatPage;

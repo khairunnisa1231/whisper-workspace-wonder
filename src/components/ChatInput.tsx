@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,8 +78,8 @@ export function ChatInput({
     
     // Call parent, clear after message will be rendered in parent now
     onSendMessage(message);
-    // Do not clear right away; let parent clear when message sent
-    // setMessage(""); // comment this out & move control to parent if needed
+    // Clear the input after sending the message
+    setMessage(""); 
   };
   
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
