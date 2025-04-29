@@ -119,11 +119,11 @@ const TrustedCompanies = () => (
         <h2 className="text-2xl font-semibold">Trusted by the Best Companies</h2>
       </div>
       <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16">
-        <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
-        <img src="/katagrafy_primary_logo.png" width={"30%"} />
-        <img src="/katagrafy_primary_logo.png" width={"30%"} />
-        <img src="/katagrafy_primary_logo.png" width={"30%"} />
-     
+        <div className="flex items-center justify-center h-12 gap-x-20 transition-all">
+          <img src="/iam_logo.png" width={"18%"} />
+          <img src="/beseek_logo.png.webp" width={"14%"} />
+          <img src="/envigeek-logo.png" width={"18%"} />
+
         </div>
         {/* <div className="flex items-center justify-center h-12 grayscale opacity-70 hover:opacity-100 hover:grayscale-0 transition-all">
           <div className="text-2xl font-bold text-gray-700">Google</div>
@@ -333,7 +333,7 @@ const Pricing = () => {
             Simple, Transparent Pricing
           </h2>
           <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-          Signup for your preferred plan and get a 14-day free trial. You can cancel anytime within the trial period and will not be charged. Lets go!
+            Signup for your preferred plan and get a 14-day free trial. You can cancel anytime within the trial period and will not be charged. Lets go!
           </p>
 
           <div className="flex items-center space-x-2 mt-6">

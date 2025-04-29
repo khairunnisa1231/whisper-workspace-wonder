@@ -71,7 +71,7 @@ const featuredFaqs = [
     answer: "Katagrafy.ai is an AI-powered conversation assistant that helps you organize thoughts, boost productivity, and get instant answers to your questions.",
     category: "general",
     icon: MessageSquare,
-    color: "border-primary/20"
+    color: "border-secondary/20"
   },
   {
     id: "get-started",
