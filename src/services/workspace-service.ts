@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceFile, ChatSession, ChatMessage } from "@/models/workspace";
 import { readFileContent } from "@/utils/readFileContent";
@@ -27,9 +28,9 @@ export async function fetchUserWorkspaces(userId: string): Promise<Workspace[]> 
       id: workspace.id,
       name: workspace.name,
       description: workspace.description || '',
-      userId: workspace.user_id,
-      createdAt: new Date(workspace.created_at),
-      updatedAt: new Date(workspace.updated_at)
+      user_id: workspace.user_id,
+      created_at: new Date(workspace.created_at),
+      updated_at: new Date(workspace.updated_at)
     }));
   } catch (err) {
     console.error('Error in fetchUserWorkspaces:', err);
@@ -67,9 +68,9 @@ export async function createWorkspace(userId: string, name: string, description?
       id: data.id,
       name: data.name,
       description: data.description || '',
-      userId: data.user_id,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      user_id: data.user_id,
+      created_at: new Date(data.created_at),
+      updated_at: new Date(data.updated_at)
     };
   } catch (err) {
     console.error('Error in createWorkspace:', err);
@@ -139,9 +140,9 @@ export async function uploadWorkspaceFile(
     size: parseInt(data.size),
     type: data.type,
     url: publicUrl,
-    workspaceId: data.workspace_id,
-    userId: data.user_id,
-    uploadedAt: new Date(data.created_at)
+    workspace_id: data.workspace_id,
+    user_id: data.user_id,
+    uploaded_at: new Date(data.created_at)
   };
 }
 
@@ -170,9 +171,9 @@ export async function fetchWorkspaceFiles(workspaceId: string): Promise<Workspac
       size: parseInt(file.size),
       type: file.type,
       url: publicUrl,
-      workspaceId: file.workspace_id,
-      userId: file.user_id,
-      uploadedAt: new Date(file.created_at)
+      workspace_id: file.workspace_id,
+      user_id: file.user_id,
+      uploaded_at: new Date(file.created_at)
     };
   });
 }
@@ -248,17 +249,17 @@ export async function fetchChatSessions(workspaceId: string): Promise<ChatSessio
         id: msg.id,
         content: msg.content,
         role: msg.role as "user" | "assistant",
-        sessionId: msg.session_id,
+        session_id: msg.session_id,
         timestamp: new Date(msg.created_at)
       })) : [];
 
       return {
         id: session.id,
         title: session.title,
-        lastMessage: session.last_message || '',
-        isPinned: session.is_pinned || false,
-        workspaceId: session.workspace_id,
-        userId: session.user_id,
+        last_message: session.last_message || '',
+        is_pinned: session.is_pinned || false,
+        workspace_id: session.workspace_id,
+        user_id: session.user_id,
         timestamp: new Date(session.updated_at),
         messages
       };
@@ -291,10 +292,10 @@ export async function createChatSession(
   return {
     id: data.id,
     title: data.title,
-    lastMessage: data.last_message || '',
-    isPinned: data.is_pinned || false,
-    workspaceId: data.workspace_id,
-    userId: data.user_id,
+    last_message: data.last_message || '',
+    is_pinned: data.is_pinned || false,
+    workspace_id: data.workspace_id,
+    user_id: data.user_id,
     timestamp: new Date(data.updated_at),
     messages: []
   };
@@ -364,7 +365,7 @@ export async function addChatMessage(
     id: messageData.id,
     content: messageData.content,
     role: messageData.role as "user" | "assistant",
-    sessionId: messageData.session_id,
+    session_id: messageData.session_id,
     timestamp: new Date(messageData.created_at)
   };
 }
@@ -387,7 +388,7 @@ export async function fetchChatMessages(sessionId: string): Promise<ChatMessage[
     id: msg.id,
     content: msg.content,
     role: msg.role as "user" | "assistant",
-    sessionId: msg.session_id,
+    session_id: msg.session_id,
     timestamp: new Date(msg.created_at)
   }));
 }
