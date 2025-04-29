@@ -92,15 +92,12 @@ export function Navbar() {
     </Link>
   );
 
-  const ListItem = React.forwardRef<
-    React.ElementRef<"a">,
-    React.ComponentPropsWithoutRef<"a">
-  >(({ className, title, children, ...props }, ref) => {
+  // Define the ListItem component with proper React import
+  const ListItem = ({ className, title, children, ...props }: React.ComponentPropsWithoutRef<"a"> & { title: string }) => {
     return (
       <li>
         <NavigationMenuLink asChild>
           <a
-            ref={ref}
             className={cn(
               "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
               className
@@ -115,8 +112,7 @@ export function Navbar() {
         </NavigationMenuLink>
       </li>
     );
-  });
-  ListItem.displayName = "ListItem";
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -164,7 +160,7 @@ export function Navbar() {
                     </NavigationMenuContent>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
-                    <Link to="/#pricing" legacyBehavior passHref>
+                    <Link to="/#pricing">
                       <NavigationMenuLink className="font-medium">
                         Pricing
                       </NavigationMenuLink>
@@ -176,7 +172,7 @@ export function Navbar() {
               {!isHomePage && !isLoginPage && isAuthenticated && (
                 <>
                   <NavigationMenuItem>
-                    <Link to="/chat" legacyBehavior passHref>
+                    <Link to="/chat">
                       <NavigationMenuLink className={cn(
                         "font-medium",
                         location.pathname === "/chat" && "text-secondary"
@@ -186,7 +182,7 @@ export function Navbar() {
                     </Link>
                   </NavigationMenuItem>
                   <NavigationMenuItem>
-                    <Link to="/workspace" legacyBehavior passHref>
+                    <Link to="/workspace">
                       <NavigationMenuLink className={cn(
                         "font-medium",
                         location.pathname === "/workspace" && "text-secondary"
@@ -199,7 +195,7 @@ export function Navbar() {
               )}
               
               <NavigationMenuItem>
-                <Link to="/faq" legacyBehavior passHref>
+                <Link to="/faq">
                   <NavigationMenuLink className={cn(
                     "font-medium",
                     location.pathname === "/faq" && "text-secondary"
@@ -244,17 +240,17 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative flex items-center gap-2 h-10 py-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.avatar_url || ""} />
-                      <AvatarFallback>{user?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={user?.user_metadata?.avatar_url || ""} />
+                      <AvatarFallback>{user?.user_metadata?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline-block">{user?.name || user?.email?.split('@')[0]}</span>
+                    <span className="hidden sm:inline-block">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user?.name}</p>
+                      <p className="text-sm font-medium leading-none">{user?.user_metadata?.name || user?.email?.split('@')[0]}</p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {user?.email}
                       </p>

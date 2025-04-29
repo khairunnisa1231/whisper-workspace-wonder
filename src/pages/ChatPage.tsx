@@ -21,6 +21,7 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = React.useState(false);
   
   const { 
     sessions,
@@ -41,6 +42,10 @@ export default function ChatPage() {
     }
   }, [isAuthenticated, navigate]);
 
+  const handleNewChatClick = () => {
+    handleNewSession();
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Navbar />
@@ -58,7 +63,7 @@ export default function ChatPage() {
             <UserPlanInfo className="mb-3" />
             
             <Button 
-              onClick={handleNewSession} 
+              onClick={handleNewChatClick} 
               variant="outline" 
               className="w-full mb-2 bg-background hover:bg-accent flex gap-2 items-center justify-center"
             >
@@ -107,7 +112,7 @@ export default function ChatPage() {
                   <p className="text-muted-foreground mb-4">
                     Start a new conversation or select an existing one to chat with our AI assistant.
                   </p>
-                  <Button onClick={handleNewSession}>
+                  <Button onClick={handleNewChatClick}>
                     <PlusCircle className="h-4 w-4 mr-2" />
                     New Conversation
                   </Button>
@@ -133,7 +138,12 @@ export default function ChatPage() {
         </div>
       </div>
       
-      <ChatShareDialog />
+      <ChatShareDialog 
+        open={isShareDialogOpen}
+        onOpenChange={setIsShareDialogOpen}
+        sessionId={activeSessionId || ""}
+        sessionTitle={activeSessionId ? (sessions.find(s => s.id === activeSessionId)?.title || "Chat") : "Chat"}
+      />
     </div>
   );
 }
