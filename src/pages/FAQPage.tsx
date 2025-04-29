@@ -36,43 +36,50 @@ const faqCategories = [
     id: "all",
     label: "All Questions",
     icon: MessageSquare,
-    color: "bg-primary text-white"
+    color: "bg-primary/20 text-primary",
+    activeColor: "bg-primary text-white"
   },
   {
     id: "general",
     label: "General",
     icon: HelpCircle,
-    color: "bg-primary-200 text-primary-700"
+    color: "bg-secondary/10 text-secondary",
+    activeColor: "bg-secondary text-white"
   },
   {
     id: "security",
     label: "Security",
     icon: ShieldCheck,
-    color: "bg-yellow-100 text-yellow-700"
+    color: "bg-accent3/10 text-accent3",
+    activeColor: "bg-accent3 text-primary"
   },
   {
     id: "billing",
     label: "Billing",
     icon: CreditCard,
-    color: "bg-pink-100 text-pink-700"
+    color: "bg-accent2/10 text-accent2",
+    activeColor: "bg-accent2 text-white"
   },
   {
     id: "features",
     label: "Features",
     icon: Layers,
-    color: "bg-blue-100 text-blue-700"
+    color: "bg-accent1/20 text-primary",
+    activeColor: "bg-accent1 text-primary"
   },
   {
     id: "technical",
     label: "Technical",
     icon: Settings,
-    color: "bg-purple-100 text-purple-700"
+    color: "bg-primary/10 text-primary",
+    activeColor: "bg-primary text-white"
   },
   {
     id: "support",
     label: "Support",
     icon: HeadphonesIcon,
-    color: "bg-green-100 text-green-700"
+    color: "bg-secondary/10 text-secondary",
+    activeColor: "bg-secondary text-white"
   }
 ];
 
@@ -83,10 +90,11 @@ const featuredFaqs = [
     question: "What is Katagrafy.ai?",
     answer: "Katagrafy.ai is an AI-powered conversation assistant that helps you organize thoughts, boost productivity, and get instant answers to your questions.",
     category: "general",
-    icon: HelpCircle,
-    color: "bg-primary-500",
+    icon: MessageSquare,
+    bgColor: "bg-primary",
     textColor: "text-white",
-    iconColor: "text-white"
+    iconColor: "text-white",
+    borderColor: "border-primary"
   },
   {
     id: "get-started",
@@ -94,9 +102,10 @@ const featuredFaqs = [
     answer: "Sign up for an account, explore the interface, and start a new conversation with our AI assistant. You can ask questions, request information, or use our tools to help organize your workspace.",
     category: "general",
     icon: BookOpen,
-    color: "bg-accent1",
-    textColor: "text-primary-800",
-    iconColor: "text-primary-800"
+    bgColor: "bg-white",
+    textColor: "text-gray-700",
+    iconColor: "text-secondary",
+    borderColor: "border-secondary"
   },
   {
     id: "data-secure",
@@ -104,9 +113,10 @@ const featuredFaqs = [
     answer: "Yes, we take security seriously. All your data is encrypted both in transit and at rest. We employ industry-standard security practices to protect your information.",
     category: "security",
     icon: ShieldCheck,
-    color: "bg-accent3",
-    textColor: "text-primary-800",
-    iconColor: "text-primary-800"
+    bgColor: "bg-white",
+    textColor: "text-gray-700",
+    iconColor: "text-accent3",
+    borderColor: "border-accent3"
   }
 ];
 
@@ -116,55 +126,73 @@ const faqItems = [
     id: "billing-work",
     question: "How does billing work?",
     answer: "We offer monthly and annual subscription plans. You'll be billed at the start of each billing cycle. You can upgrade, downgrade, or cancel your subscription at any time through the account settings page.",
-    category: "billing"
+    category: "billing",
+    icon: CreditCard,
+    iconColor: "text-accent2"
   },
   {
     id: "payment-methods",
     question: "What payment methods do you accept?",
     answer: "We accept all major credit cards (Visa, Mastercard, American Express), PayPal, and select regional payment methods. For enterprise customers, we also offer invoicing options.",
-    category: "billing"
+    category: "billing",
+    icon: CreditCard,
+    iconColor: "text-accent2"
   },
   {
     id: "free-trial",
     question: "Is there a free trial?",
     answer: "Yes, we offer a 14-day free trial on all plans. No credit card is required to start your trial. You'll be notified before your trial ends so you can decide if you want to continue with a paid subscription.",
-    category: "billing"
+    category: "billing",
+    icon: CreditCard,
+    iconColor: "text-accent2"
   },
   {
     id: "data-privacy",
     question: "How is my data handled?",
     answer: "Your data is stored securely in encrypted form. We do not sell or share your data with third parties. You maintain ownership of all your content, and you can export or delete your data at any time.",
-    category: "security"
+    category: "security",
+    icon: ShieldCheck,
+    iconColor: "text-accent3"
   },
   {
     id: "access-controls",
     question: "Can I control who accesses my workspaces?",
     answer: "Yes, you have full control over who can access your workspaces. You can invite team members with different permission levels and revoke access at any time.",
-    category: "security"
+    category: "security",
+    icon: ShieldCheck,
+    iconColor: "text-accent3"
   },
   {
     id: "file-upload",
     question: "What file types can I upload?",
     answer: "Katagrafy.ai supports a wide range of file types including PDFs, Word documents, Excel spreadsheets, text files, images, and more. The maximum file size depends on your subscription plan.",
-    category: "features"
+    category: "features",
+    icon: Layers,
+    iconColor: "text-accent1"
   },
   {
     id: "ai-models",
     question: "What AI models power Katagrafy.ai?",
     answer: "Katagrafy.ai is powered by state-of-the-art language models, including Google Gemini and other specialized models tailored to specific tasks. We continuously update our AI technology to provide the best experience.",
-    category: "technical"
+    category: "technical",
+    icon: Settings,
+    iconColor: "text-primary"
   },
   {
     id: "api-access",
     question: "Do you provide API access?",
     answer: "Yes, enterprise and pro plans include API access that allows you to integrate Katagrafy.ai's capabilities into your own applications and workflows. Comprehensive documentation is available for developers.",
-    category: "technical"
+    category: "technical",
+    icon: Settings,
+    iconColor: "text-primary"
   },
   {
     id: "contact-support",
     question: "How can I contact support?",
     answer: "You can reach our support team through the in-app chat, by emailing support@katagrafy.ai, or by scheduling a call through the support page. Enterprise customers have access to dedicated support channels.",
-    category: "support"
+    category: "support",
+    icon: HeadphonesIcon,
+    iconColor: "text-secondary"
   }
 ];
 
@@ -181,13 +209,10 @@ export default function FAQPage() {
       <Navbar />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-12 md:py-16 lg:py-20 bg-gradient-to-b from-background to-primary/5">
+        <section className="py-12 md:py-16">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center max-w-3xl mx-auto">
-              <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary px-3 py-1 text-sm">
-                Knowledge Base
-              </Badge>
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl bg-gradient-to-r from-primary via-secondary to-accent2 bg-clip-text text-transparent">
+            <div className="flex flex-col items-center justify-center text-center max-w-3xl mx-auto">
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl text-foreground mb-4">
                 Frequently Asked Questions
               </h1>
               <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
@@ -207,21 +232,24 @@ export default function FAQPage() {
               className="w-full"
             >
               <div className="overflow-x-auto pb-2">
-                <TabsList className="inline-flex w-auto p-1 h-auto bg-primary/5">
-                  {faqCategories.map((category) => (
-                    <TabsTrigger 
-                      key={category.id} 
-                      value={category.id}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
-                        "data-[state=active]:shadow-md",
-                        activeTab === category.id && category.color
-                      )}
-                    >
-                      <category.icon className="h-4 w-4" />
-                      <span>{category.label}</span>
-                    </TabsTrigger>
-                  ))}
+                <TabsList className="inline-flex w-auto p-1 h-auto bg-primary/5 rounded-full">
+                  {faqCategories.map((category) => {
+                    const isActive = activeTab === category.id;
+                    return (
+                      <TabsTrigger 
+                        key={category.id} 
+                        value={category.id}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
+                          "data-[state=active]:shadow-md",
+                          isActive ? category.activeColor : category.color
+                        )}
+                      >
+                        <category.icon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{category.label}</span>
+                      </TabsTrigger>
+                    );
+                  })}
                 </TabsList>
               </div>
 
@@ -229,16 +257,33 @@ export default function FAQPage() {
               {activeTab === "all" && (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8 animate-fade-in">
                   {featuredFaqs.map((faq) => (
-                    <Card key={faq.id} className={cn("overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all", "hover:-translate-y-1")}>
+                    <Card 
+                      key={faq.id} 
+                      className={cn(
+                        "overflow-hidden border-2 shadow-md rounded-xl", 
+                        faq.borderColor
+                      )}
+                    >
                       <CardContent className={cn("p-0")}>
-                        <div className={cn("p-6", faq.color, faq.textColor)}>
+                        <div className={cn(
+                          "p-6", 
+                          faq.bgColor, 
+                          faq.textColor
+                        )}>
                           <div className="flex items-start gap-4 mb-4">
-                            <div className="shrink-0 bg-white/20 p-2 rounded-full">
+                            <div className={cn(
+                              "shrink-0 p-2 rounded-full",
+                              faq.bgColor === "bg-white" ? "bg-gray-100" : "bg-white/20"
+                            )}>
                               <faq.icon className={cn("h-6 w-6", faq.iconColor)} />
                             </div>
                             <h3 className="text-xl font-semibold">{faq.question}</h3>
                           </div>
-                          <p className="text-current/90">{faq.answer}</p>
+                          <p className={cn(
+                            faq.bgColor === "bg-white" ? "text-gray-600" : "text-current/90"
+                          )}>
+                            {faq.answer}
+                          </p>
                         </div>
                       </CardContent>
                     </Card>
@@ -247,27 +292,24 @@ export default function FAQPage() {
               )}
 
               {/* All FAQs by category */}
-              <div className="mt-12 animate-fade-in">
-                <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent inline-block">More Questions</h2>
+              <div className="mt-12 animate-fade-in max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6 text-foreground">More Questions</h2>
                 <Accordion type="single" collapsible className="w-full">
                   {filteredFaqs.map((item) => (
                     <AccordionItem 
                       key={item.id} 
                       value={item.id} 
-                      className="border border-muted/40 mb-4 rounded-lg overflow-hidden hover:border-primary/30 transition-colors"
+                      className="border border-muted/40 mb-4 rounded-lg overflow-hidden bg-white dark:bg-card"
                     >
                       <AccordionTrigger 
-                        className="flex items-center gap-4 text-lg font-medium py-4 px-5 [&[data-state=open]]:bg-primary/5 hover:bg-muted/20"
+                        className="flex items-center gap-4 text-lg font-medium py-5 px-5 [&[data-state=open]]:bg-muted/20 hover:bg-muted/10"
                       >
-                        {item.category === 'billing' && <CreditCard className="h-5 w-5 text-accent2" />}
-                        {item.category === 'security' && <ShieldCheck className="h-5 w-5 text-accent3" />}
-                        {item.category === 'features' && <Layers className="h-5 w-5 text-secondary" />}
-                        {item.category === 'technical' && <Settings className="h-5 w-5 text-primary" />}
-                        {item.category === 'support' && <HeadphonesIcon className="h-5 w-5 text-accent1" />}
-                        {item.category === 'general' && <Info className="h-5 w-5 text-primary" />}
-                        <span className="flex-1 text-left">{item.question}</span>
+                        <div className="flex items-center gap-4">
+                          <item.icon className={cn("h-6 w-6", item.iconColor)} />
+                          <span className="flex-1 text-left">{item.question}</span>
+                        </div>
                       </AccordionTrigger>
-                      <AccordionContent className="py-4 px-5 pl-14 text-gray-700 dark:text-gray-300 bg-muted/10">
+                      <AccordionContent className="py-4 px-5 pl-16 text-gray-700 dark:text-gray-300 bg-muted/10">
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>
@@ -279,16 +321,16 @@ export default function FAQPage() {
         </section>
 
         {/* Contact Support Section */}
-        <section className="py-12 bg-gradient-to-b from-muted/20 to-primary/5">
+        <section className="py-12 bg-muted/20 mt-12">
           <div className="container px-4 md:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex items-center justify-center p-2 bg-secondary/10 rounded-full mb-4">
+              <div className="inline-flex items-center justify-center p-2 bg-secondary/20 rounded-full mb-4">
                 <HeadphonesIcon className="h-6 w-6 text-secondary" />
               </div>
-              <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Still have questions?</h2>
+              <h2 className="text-2xl font-bold mb-4 text-foreground">Still have questions?</h2>
               <p className="mb-6 text-gray-700 dark:text-gray-300">Our support team is here to help with any questions you might have.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-white hover:bg-primary/90 shadow-md transition-all">
                   <Mail className="mr-2 h-5 w-5" />
                   Contact Support
                 </a>
