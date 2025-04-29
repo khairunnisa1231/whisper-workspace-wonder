@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ChatSidebar } from "@/components/ChatSidebar";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle, Menu as MenuIcon, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useChatContext } from "@/context/ChatContext";
+import { useChat } from "@/context/ChatContext";
 import { WorkspaceSelector } from "@/components/WorkspaceSelector"; 
 import { UserPlanInfo } from "@/components/UserPlanInfo";
 
@@ -22,39 +23,17 @@ export default function ChatPage() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   
   const { 
+    sessions,
+    activeSessionId,
     messages, 
-    sendMessage, 
-    currentSession, 
-    sessions, 
-    isLoadingSessions,
-    activeWorkspace,
-    setActiveWorkspace,
-    createNewSession,
-    loadMessages,
-    isLoadingMessages
-  } = useChatContext();
-
-  useEffect(() => {
-    if (currentSession) {
-      loadMessages(currentSession.id);
-    }
-  }, [currentSession, loadMessages]);
-
-  const handleNewChat = async () => {
-    try {
-      await createNewSession();
-    } catch (error) {
-      toast({
-        title: "Error creating new chat",
-        description: "Failed to create a new chat session. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSelectSession = (sessionId: string) => {
-    loadMessages(sessionId);
-  };
+    handleSendMessage, 
+    handleNewSession,
+    handleSelectSession,
+    handleDeleteSession,
+    handlePinSession,
+    isLoading, 
+    isProcessing
+  } = useChat();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -71,7 +50,7 @@ export default function ChatPage() {
         <div className={`${isMobile && !isSidebarOpen ? 'hidden' : 'flex'} flex-col w-full md:w-64 lg:w-80 border-r h-full bg-muted/40 dark:bg-muted/20 shrink-0 overflow-hidden`}>
           <div className="p-3 border-b sticky top-0 bg-muted/40 dark:bg-muted/20 z-10">
             {/* Workspace selector stays fixed in the sidebar */}
-            <WorkspaceSelector />
+            <WorkspaceSelector onSelect={(workspaceId) => {}} />
           </div>
           
           <div className="p-3">
@@ -79,7 +58,7 @@ export default function ChatPage() {
             <UserPlanInfo className="mb-3" />
             
             <Button 
-              onClick={handleNewChat} 
+              onClick={handleNewSession} 
               variant="outline" 
               className="w-full mb-2 bg-background hover:bg-accent flex gap-2 items-center justify-center"
             >
@@ -90,8 +69,16 @@ export default function ChatPage() {
           
           {/* Sessions list */}
           <ChatSidebar 
-            onSessionSelect={handleSelectSession}
-            onSidebarToggle={() => setIsSidebarOpen(false)}
+            sessions={sessions}
+            activeSessionId={activeSessionId}
+            onSelectSession={handleSelectSession}
+            onNewSession={handleNewSession}
+            onDeleteSession={handleDeleteSession}
+            onPinSession={handlePinSession}
+            onExportChats={() => {}}
+            userPlan="Basic"
+            promptsRemaining={100}
+            onToggleSidebar={() => setIsSidebarOpen(false)}
           />
         </div>
         
@@ -112,7 +99,7 @@ export default function ChatPage() {
           {/* Ensure the chat history and input are properly positioned */}
           <div className="flex-1 overflow-hidden relative flex flex-col">
             {/* Show empty state or chat history */}
-            {!currentSession ? (
+            {!activeSessionId ? (
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="text-center max-w-md">
                   <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
@@ -120,7 +107,7 @@ export default function ChatPage() {
                   <p className="text-muted-foreground mb-4">
                     Start a new conversation or select an existing one to chat with our AI assistant.
                   </p>
-                  <Button onClick={handleNewChat}>
+                  <Button onClick={handleNewSession}>
                     <PlusCircle className="h-4 w-4 mr-2" />
                     New Conversation
                   </Button>
@@ -128,8 +115,18 @@ export default function ChatPage() {
               </div>
             ) : (
               <>
-                <ChatHistory />
-                <ChatInput />
+                <ChatHistory 
+                  sessions={sessions}
+                  activeSessionId={activeSessionId}
+                  onSelectSession={handleSelectSession}
+                  onNewSession={handleNewSession}
+                  onDeleteSession={handleDeleteSession}
+                  onPinSession={handlePinSession}
+                />
+                <ChatInput 
+                  onSendMessage={handleSendMessage}
+                  isProcessing={isProcessing}
+                />
               </>
             )}
           </div>
