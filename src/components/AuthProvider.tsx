@@ -12,7 +12,6 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
   signup: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -78,21 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   };
 
-  const loginWithGoogle = async () => {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/chat'
-      }
-    });
-    if (error) {
-      setLoading(false);
-      throw error;
-    }
-    // User will be set via onAuthStateChange after redirect
-  };
-
   const signup = async (email: string, password: string, name: string) => {
     setLoading(true);
     const { error, data } = await supabase.auth.signUp({
@@ -120,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithGoogle, signup, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, loading, login, signup, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

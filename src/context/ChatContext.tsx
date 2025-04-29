@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
@@ -196,11 +195,11 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       const session = sessions.find(s => s.id === sessionId);
       if (!session) return;
       
-      const newPinStatus = !session.is_pinned;
+      const newPinStatus = !session.isPinned;
       await updateChatSessionPin(sessionId, newPinStatus);
       
       setSessions(prev => prev.map(s => 
-        s.id === sessionId ? { ...s, is_pinned: newPinStatus } : s
+        s.id === sessionId ? { ...s, isPinned: newPinStatus } : s
       ));
       
       toast({

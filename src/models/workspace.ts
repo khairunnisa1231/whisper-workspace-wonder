@@ -3,9 +3,9 @@ export interface Workspace {
   id: string;
   name: string;
   description: string;
-  user_id: string;
-  created_at: Date;
-  updated_at: Date;
+  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface WorkspaceFile {
@@ -14,19 +14,19 @@ export interface WorkspaceFile {
   size: number;
   type: string;
   url: string;
-  workspace_id: string;
-  user_id: string;
-  uploaded_at: Date;
-  content?: string;
+  workspaceId: string;
+  userId: string;
+  uploadedAt: Date;
+  content?: string; // Add optional content property
 }
 
 export interface ChatSession {
   id: string;
   title: string;
-  last_message: string;
-  is_pinned: boolean;
-  workspace_id: string;
-  user_id: string;
+  lastMessage: string;
+  isPinned: boolean;
+  workspaceId: string;
+  userId: string;
   timestamp: Date;
   messages: ChatMessage[];
 }
@@ -35,6 +35,6 @@ export interface ChatMessage {
   id: string;
   content: string;
   role: "user" | "assistant";
-  session_id: string;
+  sessionId: string;
   timestamp: Date;
 }
