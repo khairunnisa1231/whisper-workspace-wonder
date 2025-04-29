@@ -84,8 +84,9 @@ const featuredFaqs = [
     answer: "Katagrafy.ai is an AI-powered conversation assistant that helps you organize thoughts, boost productivity, and get instant answers to your questions.",
     category: "general",
     icon: HelpCircle,
-    color: "from-primary-200 to-primary-500 text-white",
-    iconColor: "text-secondary"
+    color: "bg-primary-500",
+    textColor: "text-white",
+    iconColor: "text-white"
   },
   {
     id: "get-started",
@@ -93,8 +94,9 @@ const featuredFaqs = [
     answer: "Sign up for an account, explore the interface, and start a new conversation with our AI assistant. You can ask questions, request information, or use our tools to help organize your workspace.",
     category: "general",
     icon: BookOpen,
-    color: "from-accent1 to-accent2 text-primary",
-    iconColor: "text-primary"
+    color: "bg-accent1",
+    textColor: "text-primary-800",
+    iconColor: "text-primary-800"
   },
   {
     id: "data-secure",
@@ -102,8 +104,9 @@ const featuredFaqs = [
     answer: "Yes, we take security seriously. All your data is encrypted both in transit and at rest. We employ industry-standard security practices to protect your information.",
     category: "security",
     icon: ShieldCheck,
-    color: "from-secondary-200 to-secondary-500 text-white",
-    iconColor: "text-accent3"
+    color: "bg-accent3",
+    textColor: "text-primary-800",
+    iconColor: "text-primary-800"
   }
 ];
 
@@ -228,7 +231,7 @@ export default function FAQPage() {
                   {featuredFaqs.map((faq) => (
                     <Card key={faq.id} className={cn("overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all", "hover:-translate-y-1")}>
                       <CardContent className={cn("p-0")}>
-                        <div className={cn("bg-gradient-to-br p-6", faq.color)}>
+                        <div className={cn("p-6", faq.color, faq.textColor)}>
                           <div className="flex items-start gap-4 mb-4">
                             <div className="shrink-0 bg-white/20 p-2 rounded-full">
                               <faq.icon className={cn("h-6 w-6", faq.iconColor)} />
@@ -256,15 +259,15 @@ export default function FAQPage() {
                       <AccordionTrigger 
                         className="flex items-center gap-4 text-lg font-medium py-4 px-5 [&[data-state=open]]:bg-primary/5 hover:bg-muted/20"
                       >
-                        {item.category === 'billing' && <CreditCard className="h-5 w-5 text-pink-500" />}
-                        {item.category === 'security' && <ShieldCheck className="h-5 w-5 text-yellow-500" />}
-                        {item.category === 'features' && <Layers className="h-5 w-5 text-blue-500" />}
-                        {item.category === 'technical' && <Settings className="h-5 w-5 text-purple-500" />}
-                        {item.category === 'support' && <HeadphonesIcon className="h-5 w-5 text-green-500" />}
+                        {item.category === 'billing' && <CreditCard className="h-5 w-5 text-accent2" />}
+                        {item.category === 'security' && <ShieldCheck className="h-5 w-5 text-accent3" />}
+                        {item.category === 'features' && <Layers className="h-5 w-5 text-secondary" />}
+                        {item.category === 'technical' && <Settings className="h-5 w-5 text-primary" />}
+                        {item.category === 'support' && <HeadphonesIcon className="h-5 w-5 text-accent1" />}
                         {item.category === 'general' && <Info className="h-5 w-5 text-primary" />}
                         <span className="flex-1 text-left">{item.question}</span>
                       </AccordionTrigger>
-                      <AccordionContent className="py-4 px-5 pl-14 text-gray-600 dark:text-gray-300 bg-muted/10">
+                      <AccordionContent className="py-4 px-5 pl-14 text-gray-700 dark:text-gray-300 bg-muted/10">
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>
@@ -283,9 +286,9 @@ export default function FAQPage() {
                 <HeadphonesIcon className="h-6 w-6 text-secondary" />
               </div>
               <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Still have questions?</h2>
-              <p className="mb-6 text-muted-foreground">Our support team is here to help with any questions you might have.</p>
+              <p className="mb-6 text-gray-700 dark:text-gray-300">Our support team is here to help with any questions you might have.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
                   <Mail className="mr-2 h-5 w-5" />
                   Contact Support
                 </a>
@@ -295,7 +298,7 @@ export default function FAQPage() {
                 </a>
               </div>
               <div className="mt-8 pt-6 border-t border-border/40 flex justify-center">
-                <a href="tel:+18001234567" className="inline-flex items-center text-muted-foreground hover:text-foreground">
+                <a href="tel:+18001234567" className="inline-flex items-center text-gray-600 hover:text-foreground dark:text-gray-400 dark:hover:text-gray-200">
                   <Phone className="h-5 w-5 mr-2" />
                   <span>Call us: +1 (800) 123-4567</span>
                 </a>
