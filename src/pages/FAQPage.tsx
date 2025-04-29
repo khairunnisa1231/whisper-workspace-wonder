@@ -13,6 +13,7 @@ import {
   Card,
   CardContent
 } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { 
   MessageSquare, 
   ShieldCheck, 
@@ -20,7 +21,12 @@ import {
   Layers, 
   Settings, 
   HeadphonesIcon,
-  ChevronDown
+  ChevronDown,
+  HelpCircle,
+  Info,
+  Mail,
+  Phone,
+  BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,37 +35,44 @@ const faqCategories = [
   {
     id: "all",
     label: "All Questions",
-    icon: MessageSquare
+    icon: MessageSquare,
+    color: "bg-primary text-white"
   },
   {
     id: "general",
     label: "General",
-    icon: MessageSquare
+    icon: HelpCircle,
+    color: "bg-primary-200 text-primary-700"
   },
   {
     id: "security",
     label: "Security",
-    icon: ShieldCheck
+    icon: ShieldCheck,
+    color: "bg-yellow-100 text-yellow-700"
   },
   {
     id: "billing",
     label: "Billing",
-    icon: CreditCard
+    icon: CreditCard,
+    color: "bg-pink-100 text-pink-700"
   },
   {
     id: "features",
     label: "Features",
-    icon: Layers
+    icon: Layers,
+    color: "bg-blue-100 text-blue-700"
   },
   {
     id: "technical",
     label: "Technical",
-    icon: Settings
+    icon: Settings,
+    color: "bg-purple-100 text-purple-700"
   },
   {
     id: "support",
     label: "Support",
-    icon: HeadphonesIcon
+    icon: HeadphonesIcon,
+    color: "bg-green-100 text-green-700"
   }
 ];
 
@@ -70,16 +83,18 @@ const featuredFaqs = [
     question: "What is Katagrafy.ai?",
     answer: "Katagrafy.ai is an AI-powered conversation assistant that helps you organize thoughts, boost productivity, and get instant answers to your questions.",
     category: "general",
-    icon: MessageSquare,
-    color: "border-primary/20"
+    icon: HelpCircle,
+    color: "from-primary-200 to-primary-500 text-white",
+    iconColor: "text-secondary"
   },
   {
     id: "get-started",
     question: "How do I get started with Katagrafy.ai?",
     answer: "Sign up for an account, explore the interface, and start a new conversation with our AI assistant. You can ask questions, request information, or use our tools to help organize your workspace.",
     category: "general",
-    icon: MessageSquare,
-    color: "border-primary/20"
+    icon: BookOpen,
+    color: "from-accent1 to-accent2 text-primary",
+    iconColor: "text-primary"
   },
   {
     id: "data-secure",
@@ -87,7 +102,8 @@ const featuredFaqs = [
     answer: "Yes, we take security seriously. All your data is encrypted both in transit and at rest. We employ industry-standard security practices to protect your information.",
     category: "security",
     icon: ShieldCheck,
-    color: "border-secondary/20"
+    color: "from-secondary-200 to-secondary-500 text-white",
+    iconColor: "text-accent3"
   }
 ];
 
@@ -162,10 +178,13 @@ export default function FAQPage() {
       <Navbar />
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-12 md:py-16 lg:py-20 bg-background">
+        <section className="py-12 md:py-16 lg:py-20 bg-gradient-to-b from-background to-primary/5">
           <div className="container px-4 md:px-6">
             <div className="flex flex-col items-center justify-center space-y-4 text-center max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+              <Badge variant="outline" className="bg-secondary/10 text-secondary border-secondary px-3 py-1 text-sm">
+                Knowledge Base
+              </Badge>
+              <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl bg-gradient-to-r from-primary via-secondary to-accent2 bg-clip-text text-transparent">
                 Frequently Asked Questions
               </h1>
               <p className="max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
@@ -185,12 +204,16 @@ export default function FAQPage() {
               className="w-full"
             >
               <div className="overflow-x-auto pb-2">
-                <TabsList className="inline-flex w-auto p-1 h-auto">
+                <TabsList className="inline-flex w-auto p-1 h-auto bg-primary/5">
                   {faqCategories.map((category) => (
                     <TabsTrigger 
                       key={category.id} 
                       value={category.id}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
+                        "data-[state=active]:shadow-md",
+                        activeTab === category.id && category.color
+                      )}
                     >
                       <category.icon className="h-4 w-4" />
                       <span>{category.label}</span>
@@ -201,17 +224,19 @@ export default function FAQPage() {
 
               {/* Featured FAQs */}
               {activeTab === "all" && (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mt-8 animate-fade-in">
                   {featuredFaqs.map((faq) => (
-                    <Card key={faq.id} className={cn("overflow-hidden border-l-4", faq.color)}>
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4 mb-4">
-                          <div className="shrink-0">
-                            <faq.icon className="h-6 w-6 text-primary" />
+                    <Card key={faq.id} className={cn("overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all", "hover:-translate-y-1")}>
+                      <CardContent className={cn("p-0")}>
+                        <div className={cn("bg-gradient-to-br p-6", faq.color)}>
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="shrink-0 bg-white/20 p-2 rounded-full">
+                              <faq.icon className={cn("h-6 w-6", faq.iconColor)} />
+                            </div>
+                            <h3 className="text-xl font-semibold">{faq.question}</h3>
                           </div>
-                          <h3 className="text-xl font-semibold">{faq.question}</h3>
+                          <p className="text-current/90">{faq.answer}</p>
                         </div>
-                        <p className="text-muted-foreground">{faq.answer}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -219,22 +244,27 @@ export default function FAQPage() {
               )}
 
               {/* All FAQs by category */}
-              <div className="mt-12">
-                <h2 className="text-2xl font-bold mb-6">More Questions</h2>
+              <div className="mt-12 animate-fade-in">
+                <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent inline-block">More Questions</h2>
                 <Accordion type="single" collapsible className="w-full">
                   {filteredFaqs.map((item) => (
-                    <AccordionItem key={item.id} value={item.id} className="border-b border-border/40">
-                      <AccordionTrigger className="flex items-center gap-4 text-lg font-medium py-4">
+                    <AccordionItem 
+                      key={item.id} 
+                      value={item.id} 
+                      className="border border-muted/40 mb-4 rounded-lg overflow-hidden hover:border-primary/30 transition-colors"
+                    >
+                      <AccordionTrigger 
+                        className="flex items-center gap-4 text-lg font-medium py-4 px-5 [&[data-state=open]]:bg-primary/5 hover:bg-muted/20"
+                      >
                         {item.category === 'billing' && <CreditCard className="h-5 w-5 text-pink-500" />}
                         {item.category === 'security' && <ShieldCheck className="h-5 w-5 text-yellow-500" />}
                         {item.category === 'features' && <Layers className="h-5 w-5 text-blue-500" />}
                         {item.category === 'technical' && <Settings className="h-5 w-5 text-purple-500" />}
                         {item.category === 'support' && <HeadphonesIcon className="h-5 w-5 text-green-500" />}
-                        {item.category === 'general' && <MessageSquare className="h-5 w-5 text-primary" />}
+                        {item.category === 'general' && <Info className="h-5 w-5 text-primary" />}
                         <span className="flex-1 text-left">{item.question}</span>
-                        <ChevronDown className="h-5 w-5 shrink-0 transition-transform duration-200" />
                       </AccordionTrigger>
-                      <AccordionContent className="py-4 pl-12 text-gray-600 dark:text-gray-300">
+                      <AccordionContent className="py-4 px-5 pl-14 text-gray-600 dark:text-gray-300 bg-muted/10">
                         {item.answer}
                       </AccordionContent>
                     </AccordionItem>
@@ -246,17 +276,28 @@ export default function FAQPage() {
         </section>
 
         {/* Contact Support Section */}
-        <section className="py-12 bg-muted/20">
+        <section className="py-12 bg-gradient-to-b from-muted/20 to-primary/5">
           <div className="container px-4 md:px-6">
             <div className="mx-auto max-w-3xl text-center">
-              <h2 className="text-2xl font-bold mb-4">Still have questions?</h2>
+              <div className="inline-flex items-center justify-center p-2 bg-secondary/10 rounded-full mb-4">
+                <HeadphonesIcon className="h-6 w-6 text-secondary" />
+              </div>
+              <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Still have questions?</h2>
               <p className="mb-6 text-muted-foreground">Our support team is here to help with any questions you might have.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90">
+                <a href="mailto:support@katagrafy.ai" className="inline-flex items-center justify-center px-6 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all">
+                  <Mail className="mr-2 h-5 w-5" />
                   Contact Support
                 </a>
-                <a href="#" className="inline-flex items-center justify-center px-6 py-3 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground">
+                <a href="#" className="inline-flex items-center justify-center px-6 py-3 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-all shadow-sm">
+                  <BookOpen className="mr-2 h-5 w-5" />
                   View Documentation
+                </a>
+              </div>
+              <div className="mt-8 pt-6 border-t border-border/40 flex justify-center">
+                <a href="tel:+18001234567" className="inline-flex items-center text-muted-foreground hover:text-foreground">
+                  <Phone className="h-5 w-5 mr-2" />
+                  <span>Call us: +1 (800) 123-4567</span>
                 </a>
               </div>
             </div>
