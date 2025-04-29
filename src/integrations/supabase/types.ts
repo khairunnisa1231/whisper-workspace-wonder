@@ -147,6 +147,106 @@ export type Database = {
         }
         Relationships: []
       }
+      user_chat_settings: {
+        Row: {
+          chat_style: string
+          created_at: string | null
+          font_size: string
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chat_style?: string
+          created_at?: string | null
+          font_size?: string
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chat_style?: string
+          created_at?: string | null
+          font_size?: string
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workspace_invitations: {
+        Row: {
+          created_at: string | null
+          id: string
+          invited_by: string
+          invited_user_id: string
+          status: string
+          updated_at: string | null
+          workspace_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invited_by: string
+          invited_user_id: string
+          status?: string
+          updated_at?: string | null
+          workspace_id: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invited_by?: string
+          invited_user_id?: string
+          status?: string
+          updated_at?: string | null
+          workspace_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_members: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          updated_at: string | null
+          user_id: string
+          workspace_id: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+          user_id: string
+          workspace_id: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          updated_at?: string | null
+          user_id?: string
+          workspace_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
@@ -154,7 +254,7 @@ export type Database = {
           id: number
           name: string | null
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -162,7 +262,7 @@ export type Database = {
           id?: number
           name?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
@@ -170,7 +270,7 @@ export type Database = {
           id?: number
           name?: string | null
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

@@ -5,6 +5,7 @@ import { ChatSidebar } from "@/components/ChatSidebar";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatHistory } from "@/components/ChatHistory";
 import { ChatShareDialog } from "@/components/ChatShareDialog";
+import { ChatExportButton } from "@/components/ChatExportButton"; // Import the new component
 import { useAuth } from "@/components/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -65,6 +66,11 @@ export default function ChatPage() {
             promptsRemaining={100}
             onToggleSidebar={() => setIsSidebarOpen(false)}
           />
+          
+          {/* Add export button below the sidebar */}
+          <div className="p-3 border-t">
+            <ChatExportButton className="w-full" />
+          </div>
         </div>
         
         {/* Main Chat Area - ensure it doesn't get pushed under sidebar */}
