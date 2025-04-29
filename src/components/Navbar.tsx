@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -92,7 +91,6 @@ export function Navbar() {
     </Link>
   );
 
-  // Define the ListItem component with proper React import
   const ListItem = ({ className, title, children, ...props }: React.ComponentPropsWithoutRef<"a"> & { title: string }) => {
     return (
       <li>
@@ -122,7 +120,6 @@ export function Navbar() {
           <span className="font-bold text-xl text-primary">Katagrafy.ai</span>
         </Link>
         
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex md:flex-1 md:justify-center">
           <NavigationMenu>
             <NavigationMenuList>
@@ -240,19 +237,21 @@ export function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative flex items-center gap-2 h-10 py-2">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.user_metadata?.avatar_url || ""} />
-                      <AvatarFallback>{user?.user_metadata?.name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt="User avatar" />
+                      <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline-block">{user?.user_metadata?.name || user?.email?.split('@')[0]}</span>
+                    <span className="hidden sm:inline-block">
+                      {user?.email?.split('@')[0] || 'User'}
+                    </span>
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user?.user_metadata?.name || user?.email?.split('@')[0]}</p>
+                      <p className="text-sm font-medium leading-none">{user?.email?.split('@')[0] || 'User'}</p>
                       <p className="text-xs leading-none text-muted-foreground">
-                        {user?.email}
+                        {user?.email || ''}
                       </p>
                     </div>
                   </DropdownMenuLabel>
@@ -286,7 +285,6 @@ export function Navbar() {
         </div>
       </div>
       
-      {/* Invite notification dialog */}
       <Dialog open={showNotifications} onOpenChange={setShowNotifications}>
         <DialogContent>
           <DialogHeader>
@@ -316,7 +314,6 @@ export function Navbar() {
         </DialogContent>
       </Dialog>
       
-      {/* Mobile Navigation */}
       {isMenuOpen && (
         <div className="md:hidden border-t border-border/40 bg-background">
           <div className="container py-4 flex flex-col gap-4">
