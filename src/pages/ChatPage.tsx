@@ -12,8 +12,6 @@ import { PlusCircle, Menu as MenuIcon, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useChat } from "@/context/ChatContext";
-import { WorkspaceSelector } from "@/components/WorkspaceSelector"; 
-import { UserPlanInfo } from "@/components/UserPlanInfo";
 
 export default function ChatPage() {
   const { isAuthenticated, user } = useAuth();
@@ -53,26 +51,6 @@ export default function ChatPage() {
       <div className="flex-1 relative flex overflow-hidden">
         {/* Left Sidebar */}
         <div className={`${isMobile && !isSidebarOpen ? 'hidden' : 'flex'} flex-col w-full md:w-64 lg:w-80 border-r h-full bg-muted/40 dark:bg-muted/20 shrink-0 overflow-hidden`}>
-          <div className="p-3 border-b sticky top-0 bg-muted/40 dark:bg-muted/20 z-10">
-            {/* Workspace selector stays fixed in the sidebar */}
-            <WorkspaceSelector onSelect={(workspaceId) => {}} />
-          </div>
-          
-          <div className="p-3">
-            {/* Add user plan info component */}
-            <UserPlanInfo className="mb-3" />
-            
-            <Button 
-              onClick={handleNewChatClick} 
-              variant="outline" 
-              className="w-full mb-2 bg-background hover:bg-accent flex gap-2 items-center justify-center"
-            >
-              <PlusCircle className="h-4 w-4" />
-              New Chat
-            </Button>
-          </div>
-          
-          {/* Sessions list */}
           <ChatSidebar 
             sessions={sessions}
             activeSessionId={activeSessionId}
