@@ -10,6 +10,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function fetchAndEncodeImage(url: string): Promise<string | null> {
+  try {
+    console.log("Fetching image from URL:", url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      console.error("Failed to fetch image:", response.status, response.statusText);
+      return null;
+    }
+    
+    const imageBytes = new Uint8Array(await response.arrayBuffer());
+    const base64Image = btoa(String.fromCharCode(...imageBytes));
+    console.log("Successfully encoded image to base64");
+    return base64Image;
+  } catch (error) {
+    console.error("Error fetching and encoding image:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -82,9 +102,9 @@ Example format:
       } else {
         if (hasImageContent) {
           // Enhanced prompt for image analysis
-          fullPrompt = `I have the following image file that I want you to analyze and use to answer my question:
+          fullPrompt = `I have the following image that I want you to analyze and use to answer my question:
           
-${fileContext}
+${fileContext.replace(/URL: https?:\/\/[^\s\]]+/g, "")}
 
 My question is: ${prompt}
 
@@ -162,11 +182,25 @@ Example format:
         const imageUrl = imageUrlMatch[1];
         console.log("Extracted image URL for analysis:", imageUrl);
         
-        // Add the image URL to the request as an inline data URI
-        apiBody.contents[0].parts = [
-          { text: fullPrompt },
-          { inlineData: { mimeType: "image/jpeg", data: imageUrl } }
-        ];
+        // Fetch the image and convert to base64
+        const base64Image = await fetchAndEncodeImage(imageUrl);
+        
+        if (base64Image) {
+          // Add the image as base64 data to the request
+          apiBody.contents[0].parts = [
+            { text: fullPrompt },
+            { 
+              inline_data: { 
+                mime_type: "image/jpeg", 
+                data: base64Image 
+              } 
+            }
+          ];
+        } else {
+          console.log("Failed to encode image, falling back to text-only mode");
+          // The image couldn't be encoded, continue with text-only prompt
+          apiBody.contents[0].parts = [{ text: fullPrompt }];
+        }
       } else {
         console.log("Failed to extract image URL from context");
       }
