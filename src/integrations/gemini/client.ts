@@ -51,9 +51,10 @@ Please analyze the file content above and answer my question based on that infor
     const isSuggestionRequest = prompt.includes("Generate follow-up questions");
     
     // Generate a unique cache key to avoid using stale suggestion data
+    // Include more context information in the cache key to better differentiate requests
     const timestamp = Date.now();
     const cacheKey = isSuggestionRequest ? 
-      `suggestions-${timestamp}-${prompt.substring(0, 50)}` : 
+      `suggestions-${timestamp}-${fileContext ? 'with-file' : 'no-file'}-${prompt.substring(0, 30)}` : 
       undefined;
     
     console.log("Cache key for request:", cacheKey || "none (not a suggestion request)");

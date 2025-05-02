@@ -65,14 +65,11 @@ function ChatPage() {
   
   // Use memoized state for suggestedPrompts to prevent unnecessary re-renders
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([
-    "Help me draft an email to my boss",
-    "Explain machine learning concepts to a beginner",
-    "Write a blog post about productivity tips",
-    "Create a workout plan for beginners",
-    "Suggest 5 books to read this summer",
-    "Generate ideas for my marketing campaign",
-    "Help me troubleshoot my code",
-    "Write a story about a space traveler"
+    "Help me understand this document",
+    "What are the key points in this file?",
+    "Summarize the main ideas",
+    "Explain the context of this information",
+    "Identify important patterns or trends"
   ]);
   
   // Memoize active session to prevent unnecessary re-renders
@@ -129,10 +126,11 @@ function ChatPage() {
         // Only proceed if the component is still mounted
         if (!isMounted) return;
 
+        // Add a slight delay to prevent too frequent API calls
         const newSuggestions = await getSuggestions(lastUserMessage, fileContext);
         if (isMounted && newSuggestions.length > 0) {
-          setSuggestedPrompts(newSuggestions);
           console.log("New suggestions generated:", newSuggestions);
+          setSuggestedPrompts(newSuggestions);
         }
       } catch (error) {
         console.error("Failed to generate suggestions:", error);
@@ -144,7 +142,7 @@ function ChatPage() {
       if (!isSuggestionsLoading) {
         generateSuggestions();
       }
-    }, 1000);
+    }, 1500); // Increased debounce time to reduce frequency
 
     return () => {
       isMounted = false;
@@ -265,7 +263,8 @@ function ChatPage() {
     setActiveWorkspace(workspaceId);
   }, [setActiveWorkspace]);
 
-  const handleSendMessageWithLog = async (content: string) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleSendMessageWithLog = useCallback(async (content: string) => {
     console.log('Sending message:', content);
     try {
       await handleSendMessage(content);
@@ -273,7 +272,7 @@ function ChatPage() {
     } catch (error) {
       console.error('Error sending message:', error);
     }
-  };
+  }, [handleSendMessage, messages.length]);
 
   const handleInviteUser = async () => {
     setInviteLoading(true);
@@ -316,6 +315,11 @@ function ChatPage() {
     setInviteEmail("");
     setIsInviteOpen(false);
   };
+
+  // Memoize the recommended prompts to prevent unnecessary re-renders
+  const memoizedSuggestedPrompts = useMemo(() => {
+    return suggestedPrompts;
+  }, [suggestedPrompts]);
 
   if (!isAuthenticated) {
     return (
@@ -459,7 +463,7 @@ function ChatPage() {
                     onFileUpload={handleFileInputChange}
                     onUrlUpload={handleUrlUpload}
                     isProcessing={isProcessing}
-                    recommendedPrompts={suggestedPrompts}
+                    recommendedPrompts={memoizedSuggestedPrompts}
                   />
                 </div>
               </div>

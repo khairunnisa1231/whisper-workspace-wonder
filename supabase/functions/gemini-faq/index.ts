@@ -56,7 +56,7 @@ serve(async (req) => {
       if (isSuggestionRequest) {
         fullPrompt = `${prompt}
         
-Please return ONLY a numbered list of 5 relevant questions with no preamble or explanation.
+Please return ONLY a numbered list of 3 to 6 relevant questions with no preamble or explanation.
 Example format:
 1. First question here?
 2. Second question here?`;
@@ -77,7 +77,7 @@ Please analyze the file content provided above and answer my question based only
       if (isSuggestionRequest) {
         fullPrompt = `${prompt}
         
-Please return ONLY a numbered list of 5 relevant questions with no preamble or explanation.
+Please return ONLY a numbered list of 3 to 6 relevant questions with no preamble or explanation.
 Example format:
 1. First question here?
 2. Second question here?`;
@@ -102,10 +102,10 @@ Example format:
           }
         ],
         generationConfig: {
-          temperature: isSuggestionRequest ? 0.9 : 0.7, // Higher temperature for more creative suggestions
+          temperature: isSuggestionRequest ? 0.7 : 0.5, // Adjusted temperature for better suggestions
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: isSuggestionRequest ? 1024 : 4096, // Shorter for suggestions
+          maxOutputTokens: isSuggestionRequest ? 256 : 4096, // Shorter for suggestions
         },
         safetySettings: [
           {
@@ -155,8 +155,14 @@ Example format:
       const lines = answer.split('\n').filter(line => line.trim().length > 0);
       const numberedLines = lines.filter(line => /^\d+\./.test(line.trim()));
       
-      if (numberedLines.length > 0) {
-        formattedAnswer = numberedLines.join('\n');
+      if (numberedLines.length >= 3) {
+        formattedAnswer = numberedLines.slice(0, 6).join('\n');
+      } else if (lines.length >= 3) {
+        // If no numbered lines but we have text, try to format it
+        formattedAnswer = lines.slice(0, 6).map((line, index) => `${index + 1}. ${line.replace(/^\d+\.\s*/, '')}`).join('\n');
+      } else {
+        // Fallback to default suggestions
+        formattedAnswer = "1. Can you explain this document in simple terms?\n2. What are the main points covered?\n3. How can I apply this information?\n4. Are there any limitations to consider?\n5. What related topics should I explore next?";
       }
       
       console.log("Returning suggestions:", formattedAnswer.substring(0, 100) + (formattedAnswer.length > 100 ? "..." : ""));

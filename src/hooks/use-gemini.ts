@@ -64,7 +64,7 @@ export function useGemini() {
       setLastSuggestionsContext(newContext);
       console.log("Fetching new suggestions with context:", JSON.stringify(newContext));
 
-      let prompt = "Generate 5 follow-up questions that would be useful for the user to ask next. ";
+      let prompt = "Generate 3 to 6 follow-up questions that would be useful for the user to ask next. ";
       
       if (lastQuestion) {
         prompt += `They previously asked: "${lastQuestion}". `;
@@ -88,11 +88,11 @@ export function useGemini() {
         .filter(line => /^\d+\./.test(line.trim())) // Only take numbered lines
         .map(line => line.replace(/^\d+\.\s*/, '').trim()) // Remove numbers
         .filter(question => question.length > 0)
-        .slice(0, 5); // Limit to 5 questions
+        .slice(0, 6); // Limit to 6 questions
       
       console.log("Parsed suggestions:", suggestions);
       
-      if (suggestions.length > 0) {
+      if (suggestions.length >= 3) {
         return suggestions;
       } else {
         // Fallback if parsing fails

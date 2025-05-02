@@ -54,10 +54,7 @@ export function ChatInput({
     "Summarize this document for me.",
     "Generate a list of ideas for...",
     "How can I improve my...",
-    "Compare and contrast...",
-    "Create a plan for...",
-    "What's your opinion on...",
-    "Help me debug this code..."
+    "Compare and contrast..."
   ]
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
@@ -76,10 +73,12 @@ export function ChatInput({
   const commonEmojis = useMemo(() => ["👍", "👎", "😊", "🙏", "🔥", "👀", "❤️", "🚀", "🎉", "🤔"], []);
   
   // Memoize the displayed prompts to prevent unnecessary re-renders
-  const displayedPrompts = useMemo(() => 
-    recommendedPrompts?.slice(0, 4) || [], 
-    [recommendedPrompts]
-  );
+  const displayedPrompts = useMemo(() => {
+    // Ensure we show 3-6 suggestions, with a preference for 4 if available
+    const promptCount = recommendedPrompts?.length || 0;
+    if (promptCount <= 6) return recommendedPrompts || [];
+    return recommendedPrompts?.slice(0, 4) || []; // Show 4 by default if we have more than 6
+  }, [recommendedPrompts]);
 
   // Show suggestions when the input is empty
   useEffect(() => {
@@ -88,7 +87,7 @@ export function ChatInput({
   
   useEffect(() => {
     // Log when recommended prompts change to help debug
-    console.log("Recommended prompts updated:", recommendedPrompts);
+    console.log("Recommended prompts updated:", recommendedPrompts?.length || 0);
   }, [recommendedPrompts]);
   
   const handleSubmit = useCallback((e: React.FormEvent) => {
@@ -366,16 +365,22 @@ export function ChatInput({
           <PopoverContent className="w-72 p-2">
             <div className="flex flex-col gap-2">
               <p className="text-sm font-medium">More suggestions:</p>
-              {recommendedPrompts.map((prompt, index) => (
-                <Button
-                  key={index}
-                  variant="ghost"
-                  className="h-auto py-2 px-3 justify-start text-left text-sm"
-                  onClick={() => handlePromptSelect(prompt)}
-                >
-                  {prompt}
-                </Button>
-              ))}
+              {recommendedPrompts && recommendedPrompts.length > 0 ? (
+                recommendedPrompts.map((prompt, index) => (
+                  <Button
+                    key={index}
+                    variant="ghost"
+                    className="h-auto py-2 px-3 justify-start text-left text-sm"
+                    onClick={() => handlePromptSelect(prompt)}
+                  >
+                    {prompt}
+                  </Button>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground py-2">
+                  No suggestions available. Try uploading a file or asking a question first.
+                </p>
+              )}
             </div>
           </PopoverContent>
         </Popover>
