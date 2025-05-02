@@ -8,6 +8,10 @@ export function useGemini() {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [response, setResponse] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [lastSuggestionsContext, setLastSuggestionsContext] = useState<{
+    lastQuestion?: string;
+    fileContext?: string;
+  }>({});
   const { toast } = useToast();
 
   const askQuestion = async (prompt: string, fileContext?: string) => {
@@ -37,8 +41,19 @@ export function useGemini() {
   };
 
   const getSuggestions = async (lastQuestion?: string, fileContext?: string): Promise<string[]> => {
+    // Compare with last context to avoid unnecessary fetches
+    const newContext = { lastQuestion, fileContext: fileContext ? 'yes' : undefined };
+    const contextsEqual = JSON.stringify(newContext) === JSON.stringify(lastSuggestionsContext);
+    
+    // If we're already loading suggestions or context hasn't changed, don't fetch again
+    if (isSuggestionsLoading || (contextsEqual && lastSuggestionsContext.lastQuestion !== undefined)) {
+      console.log("Skipping suggestions fetch - context unchanged or already loading");
+      return [];
+    }
+    
     try {
       setIsSuggestionsLoading(true);
+      setLastSuggestionsContext(newContext);
 
       let prompt = "Generate 5 follow-up questions that would be useful for the user to ask next. ";
       

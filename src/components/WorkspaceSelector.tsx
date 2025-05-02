@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -35,10 +35,11 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [lastFetchedUserId, setLastFetchedUserId] = useState<string | null>(null);
   
   useEffect(() => {
     async function loadWorkspaces() {
-      if (!user) return;
+      if (!user || user.id === lastFetchedUserId) return;
       
       try {
         setIsLoading(true);
@@ -47,7 +48,9 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
         console.log('Fetching workspaces for user:', user.id);
         const userWorkspaces = await fetchUserWorkspaces(user.id);
         console.log('Fetched workspaces:', userWorkspaces);
+        
         setWorkspaces(userWorkspaces);
+        setLastFetchedUserId(user.id);
         
         // Select the first workspace by default
         if (userWorkspaces.length > 0 && !selectedWorkspace) {
@@ -64,15 +67,16 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
     }
     
     loadWorkspaces();
-  }, [user, onSelect, selectedWorkspace]);
+  }, [user, onSelect, selectedWorkspace, lastFetchedUserId]);
   
-  const handleSelect = (workspace: Workspace) => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const handleSelect = useCallback((workspace: Workspace) => {
     setSelectedWorkspace(workspace);
     onSelect(workspace.id);
     setOpen(false);
-  };
+  }, [onSelect]);
   
-  const handleCreateWorkspace = async () => {
+  const handleCreateWorkspace = useCallback(async () => {
     if (!user) {
       toast({
         title: "Authentication Error",
@@ -126,7 +130,14 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
       // Enter workspace creation mode
       setIsCreatingWorkspace(true);
     }
-  };
+  }, [isCreatingWorkspace, newWorkspaceName, onSelect, toast, user]);
+
+  // Memoize the button text to prevent unnecessary re-renders
+  const buttonText = useMemo(() => {
+    if (isLoading) return "Loading workspaces...";
+    if (selectedWorkspace) return selectedWorkspace.name;
+    return "Select workspace";
+  }, [isLoading, selectedWorkspace]);
   
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -138,13 +149,7 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
           className="w-full justify-between"
           disabled={isLoading}
         >
-          {isLoading ? (
-            "Loading workspaces..."
-          ) : selectedWorkspace ? (
-            selectedWorkspace.name
-          ) : (
-            "Select workspace"
-          )}
+          {buttonText}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>

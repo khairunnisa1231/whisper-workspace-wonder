@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { ChatInput } from "@/components/ChatInput";
@@ -63,6 +63,7 @@ function ChatPage() {
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
   
+  // Use memoized state for suggestedPrompts to prevent unnecessary re-renders
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([
     "Help me draft an email to my boss",
     "Explain machine learning concepts to a beginner",
@@ -74,6 +75,12 @@ function ChatPage() {
     "Write a story about a space traveler"
   ]);
   
+  // Memoize active session to prevent unnecessary re-renders
+  const activeSession = useMemo(() => 
+    sessions.find(s => s.id === activeSessionId),
+    [sessions, activeSessionId]
+  );
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // User plan information
@@ -87,6 +94,8 @@ function ChatPage() {
 
   // Generate suggestions based on uploaded files and/or last message
   useEffect(() => {
+    let isMounted = true;
+    
     const generateSuggestions = async () => {
       try {
         // Only generate when we have messages or files
@@ -117,17 +126,29 @@ function ChatPage() {
           }
         }
 
+        // Only proceed if the component is still mounted
+        if (!isMounted) return;
+
         const newSuggestions = await getSuggestions(lastUserMessage, fileContext);
-        setSuggestedPrompts(newSuggestions);
+        if (isMounted && newSuggestions.length > 0) {
+          setSuggestedPrompts(newSuggestions);
+        }
       } catch (error) {
         console.error("Failed to generate suggestions:", error);
       }
     };
 
-    // Generate new suggestions when messages or files change
-    if (!isSuggestionsLoading) {
-      generateSuggestions();
-    }
+    // Debounce the suggestions generation to prevent rapid re-fetching
+    const debounceTimer = setTimeout(() => {
+      if (!isSuggestionsLoading) {
+        generateSuggestions();
+      }
+    }, 1000);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(debounceTimer);
+    };
   }, [messages, files, getSuggestions, isSuggestionsLoading, isProcessing]);
   
   useEffect(() => {
@@ -238,12 +259,10 @@ function ChatPage() {
     setIsFileViewerMinimized(!isFileViewerMinimized);
   };
 
-  const activeSession = sessions.find(s => s.id === activeSessionId);
-  
-  const handleWorkspaceSelect = (workspaceId: string) => {
+  const handleWorkspaceSelect = useCallback((workspaceId: string) => {
     console.log('Selected workspace:', workspaceId);
     setActiveWorkspace(workspaceId);
-  };
+  }, [setActiveWorkspace]);
 
   const handleSendMessageWithLog = async (content: string) => {
     console.log('Sending message:', content);

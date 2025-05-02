@@ -23,9 +23,13 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
         fileContext = fileContext.substring(0, 50000) + "\n... [Content truncated due to size limitations] ...";
       }
       
-      // For suggestion generation, we include the file content directly in the prompt
+      // For suggestion generation, we make the prompt more focused on concise responses
       if (prompt.includes("Generate follow-up questions")) {
-        enhancedPrompt = prompt;
+        enhancedPrompt = `${prompt}
+
+Please return ONLY a numbered list of questions with no preamble or explanation. Example format:
+1. First question here?
+2. Second question here?`;
       } else {
         // Format the prompt to make it clear we're sending file content for context
         enhancedPrompt = `I have the following file content that I want you to analyze and use to answer my question.
@@ -52,7 +56,8 @@ Please analyze the file content above and answer my question based on that infor
         prompt: enhancedPrompt,
         includeFileContent: includeFileContent, // Explicitly signal that file content is included
         fileContext: fileContext,
-        isSuggestionRequest: isSuggestionRequest
+        isSuggestionRequest: isSuggestionRequest,
+        cacheKey: isSuggestionRequest ? prompt.substring(0, 100) : undefined // Add cache key for suggestion requests
       },
     });
 

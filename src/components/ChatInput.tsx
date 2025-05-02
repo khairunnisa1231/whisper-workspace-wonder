@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -72,14 +72,20 @@ export function ChatInput({
   const [isUrlUploading, setIsUrlUploading] = useState(false);
   
   // Common emojis for quick access
-  const commonEmojis = ["👍", "👎", "😊", "🙏", "🔥", "👀", "❤️", "🚀", "🎉", "🤔"];
+  const commonEmojis = useMemo(() => ["👍", "👎", "😊", "🙏", "🔥", "👀", "❤️", "🚀", "🎉", "🤔"], []);
+  
+  // Memoize the displayed prompts to prevent unnecessary re-renders
+  const displayedPrompts = useMemo(() => 
+    recommendedPrompts?.slice(0, 4) || [], 
+    [recommendedPrompts]
+  );
   
   // Show suggestions when the input is empty
   useEffect(() => {
     setShowSuggestions(!message.trim());
   }, [message]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
     if (!message.trim() || isProcessing) return;
@@ -88,16 +94,16 @@ export function ChatInput({
     onSendMessage(message);
     // Clear the input after sending the message
     setMessage(""); 
-  };
+  }, [message, isProcessing, onSendMessage]);
   
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit(e as unknown as React.FormEvent);
     }
-  };
+  }, [handleSubmit]);
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onFileUpload) {
       onFileUpload(file);
@@ -109,9 +115,9 @@ export function ChatInput({
         description: `${file.name} has been uploaded.`,
       });
     }
-  };
+  }, [onFileUpload, toast]);
   
-  const handleUrlUpload = async () => {
+  const handleUrlUpload = useCallback(async () => {
     if (!uploadUrl.trim() || !onUrlUpload) return;
     
     setIsUrlUploading(true);
@@ -135,14 +141,21 @@ export function ChatInput({
     } finally {
       setIsUrlUploading(false);
     }
-  };
+  }, [uploadUrl, onUrlUpload, toast]);
   
-  const handleEmojiClick = (emoji: string) => {
+  const handleEmojiClick = useCallback((emoji: string) => {
     setMessage((prev) => prev + emoji);
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
-  };
+  }, []);
+  
+  const handlePromptSelect = useCallback((prompt: string) => {
+    setMessage(prompt);
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
   
   const handleMicToggle = async () => {
     if (!isRecording) {
@@ -201,13 +214,6 @@ export function ChatInput({
     }
   };
   
-  const handlePromptSelect = (prompt: string) => {
-    setMessage(prompt);
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  };
-  
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (onFileUpload && acceptedFiles.length > 0) {
       onFileUpload(acceptedFiles[0]);
@@ -238,7 +244,7 @@ export function ChatInput({
       
       {showSuggestions && (
         <div className="flex flex-wrap gap-2 mb-3">
-          {recommendedPrompts.slice(0, 4).map((prompt, index) => (
+          {displayedPrompts.map((prompt, index) => (
             <Button
               key={index}
               variant="outline"
