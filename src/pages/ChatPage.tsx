@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -107,6 +106,35 @@ function ChatPage() {
       }
     } catch (error) {
       console.error('Error uploading file:', error);
+    }
+  };
+
+  const handleUrlUpload = async (url: string) => {
+    try {
+      console.log('Adding URL document:', url);
+      
+      // Create a mock File object with URL metadata
+      const urlParts = url.split('/');
+      const fileName = urlParts[urlParts.length - 1] || 'external-document';
+      
+      // Add URL as a special type of file
+      await handleFileUpload({
+        name: fileName,
+        type: 'application/url',
+        size: url.length,
+        url: url,
+        lastModified: Date.now()
+      } as File);
+      
+      if (!isFileViewerOpen) {
+        setIsFileViewerOpen(true);
+        setIsFileViewerMinimized(false);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error adding URL document:', error);
+      throw error;
     }
   };
 
@@ -361,6 +389,7 @@ function ChatPage() {
                   <ChatInput
                     onSendMessage={handleSendMessageWithLog}
                     onFileUpload={handleFileInputChange}
+                    onUrlUpload={handleUrlUpload}
                     isProcessing={isProcessing}
                     recommendedPrompts={recommendedPrompts}
                   />

@@ -1,11 +1,12 @@
-
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, SendHorizonal, FileUp, Mic, SmilePlus, LightbulbIcon } from "lucide-react";
+import { Loader2, SendHorizonal, FileUp, Mic, SmilePlus, LightbulbIcon, Link } from "lucide-react";
 import { useDropzone } from 'react-dropzone';
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 // Add proper TypeScript interface for SpeechRecognition
 interface SpeechRecognitionEvent extends Event {
@@ -37,6 +38,7 @@ interface SpeechRecognition extends EventTarget {
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onFileUpload?: (file: File) => void;
+  onUrlUpload?: (url: string) => void;
   isProcessing?: boolean;
   recommendedPrompts?: string[];
 }
@@ -44,6 +46,7 @@ interface ChatInputProps {
 export function ChatInput({ 
   onSendMessage, 
   onFileUpload,
+  onUrlUpload,
   isProcessing = false,
   recommendedPrompts = [
     "Explain the concept of...",
@@ -62,6 +65,11 @@ export function ChatInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
+  
+  // Upload dialog state
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [uploadUrl, setUploadUrl] = useState("");
+  const [isUrlUploading, setIsUrlUploading] = useState(false);
   
   // Common emojis for quick access
   const commonEmojis = ["👍", "👎", "😊", "🙏", "🔥", "👀", "❤️", "🚀", "🎉", "🤔"];
@@ -100,6 +108,32 @@ export function ChatInput({
         title: "File uploaded",
         description: `${file.name} has been uploaded.`,
       });
+    }
+  };
+  
+  const handleUrlUpload = async () => {
+    if (!uploadUrl.trim() || !onUrlUpload) return;
+    
+    setIsUrlUploading(true);
+    try {
+      await onUrlUpload(uploadUrl.trim());
+      
+      toast({
+        title: "URL added",
+        description: "The document URL has been successfully added.",
+      });
+      
+      setUploadUrl("");
+      setIsUploadDialogOpen(false);
+    } catch (error) {
+      console.error("Error uploading URL:", error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to add the URL. Please check if it's valid and try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUrlUploading(false);
     }
   };
   
@@ -177,8 +211,12 @@ export function ChatInput({
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (onFileUpload && acceptedFiles.length > 0) {
       onFileUpload(acceptedFiles[0]);
+      toast({
+        title: "File uploaded",
+        description: `${acceptedFiles[0].name} has been uploaded.`,
+      });
     }
-  }, [onFileUpload]);
+  }, [onFileUpload, toast]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -223,16 +261,41 @@ export function ChatInput({
           className="hidden" 
         />
         
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 rounded-full"
-          onClick={() => fileInputRef.current?.click()}
-          title="Upload file"
-        >
-          <FileUp className="h-4 w-4" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full"
+              title="Upload document"
+            >
+              <FileUp className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-56 p-2">
+            <div className="flex flex-col gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FileUp className="h-4 w-4 mr-2" />
+                Upload file
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="justify-start"
+                onClick={() => setIsUploadDialogOpen(true)}
+              >
+                <Link className="h-4 w-4 mr-2" />
+                Add URL link
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
         
         <Popover>
           <PopoverTrigger asChild>
@@ -330,6 +393,49 @@ export function ChatInput({
           </Button>
         </div>
       </div>
+      
+      {/* URL upload dialog */}
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Document URL</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label htmlFor="url" className="text-sm font-medium">
+                Enter document URL
+              </label>
+              <Input
+                id="url"
+                placeholder="https://example.com/document.pdf"
+                value={uploadUrl}
+                onChange={(e) => setUploadUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Supported formats: PDF, text files, and web pages
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUrlUpload}
+              disabled={isUrlUploading || !uploadUrl.trim()}
+            >
+              {isUrlUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add URL"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

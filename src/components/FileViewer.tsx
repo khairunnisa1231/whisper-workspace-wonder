@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { File, Maximize2, Minimize2, Trash2, X } from "lucide-react";
+import { File, Maximize2, Minimize2, Trash2, X, Link } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { WorkspaceFile } from "@/models/workspace";
 import { useToast } from "@/hooks/use-toast";
@@ -40,8 +40,9 @@ export function FileViewer({
       
       setIsLoading(true);
       try {
-        // Only attempt to load content for text-based files or PDFs
-        if (selectedFile.type.startsWith('text/') || 
+        // Only attempt to load content for text-based files, PDFs, or URL documents
+        if (selectedFile.type === 'application/url' ||
+            selectedFile.type.startsWith('text/') || 
             selectedFile.type === 'application/json' || 
             selectedFile.type === 'application/pdf' ||
             selectedFile.name.endsWith('.md') || 
@@ -104,6 +105,18 @@ export function FileViewer({
     }
   };
   
+  const getFileIcon = (file: WorkspaceFile) => {
+    if (file.type === 'application/url') {
+      return <Link size={20} className="text-blue-500" />;
+    } else if (file.type.startsWith("image/")) {
+      return <File size={20} className="text-green-500" />;
+    } else if (file.type === "application/pdf") {
+      return <File size={20} className="text-red-500" />;
+    } else {
+      return <File size={20} className="text-muted-foreground" />;
+    }
+  };
+  
   const renderFilePreview = () => {
     if (!selectedFile) return null;
     
@@ -111,6 +124,28 @@ export function FileViewer({
       return (
         <div className="flex items-center justify-center p-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+    
+    // Handle URL documents
+    if (selectedFile.type === 'application/url') {
+      const url = (selectedFile as any).url;
+      return (
+        <div className="p-4 flex flex-col items-center justify-center text-center">
+          <Link size={48} className="text-blue-500 mb-4" />
+          <p className="text-sm font-medium mb-2">External Document URL</p>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline break-all"
+          >
+            {url}
+          </a>
+          <p className="mt-4 text-xs text-muted-foreground">
+            This URL has been added to your conversation context and Gemini AI can reference it.
+          </p>
         </div>
       );
     }
@@ -247,7 +282,7 @@ export function FileViewer({
               <div className="flex flex-col items-center justify-center h-full p-4 text-center text-muted-foreground">
                 <File size={32} className="mb-2" />
                 <p className="text-sm">No files uploaded</p>
-                <p className="text-xs mt-2">Upload files for Gemini to analyze and answer questions about.</p>
+                <p className="text-xs mt-2">Upload files or add URL links for Gemini to analyze and answer questions about.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -257,7 +292,7 @@ export function FileViewer({
                     className="flex items-center gap-2 p-2 rounded-md hover:bg-muted cursor-pointer"
                     onClick={() => setSelectedFile(file)}
                   >
-                    <File size={20} className="text-muted-foreground" />
+                    {getFileIcon(file)}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
                       <p className="text-xs text-muted-foreground">

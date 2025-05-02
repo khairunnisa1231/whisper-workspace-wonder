@@ -1,4 +1,3 @@
-
 import * as pdfjs from 'pdfjs-dist';
 
 // Set the PDF.js worker location using the CDN approach instead of direct import
@@ -13,6 +12,11 @@ if (typeof window !== 'undefined') {
 export async function readFileContent(file: File): Promise<string | null> {
   try {
     console.log(`Reading content from file: ${file.name}, type: ${file.type}`);
+    
+    // Special handling for URL type files
+    if (file.type === 'application/url' && 'url' in file) {
+      return `URL document: ${(file as any).url}`;
+    }
     
     // Handle text, pdf, markdown, code files
     const mime = file.type;
@@ -34,34 +38,29 @@ export async function readFileContent(file: File): Promise<string | null> {
     }
     
     if (mime === "application/pdf") {
-      try {
-        // Extract text from PDF using pdf.js
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        
-        console.log(`PDF loaded with ${pdf.numPages} pages`);
-        
-        let fullText = `PDF File: ${file.name}\n\n`;
-        // Process up to first 20 pages (to avoid very large files)
-        const maxPages = Math.min(pdf.numPages, 20);
-        
-        for (let i = 1; i <= maxPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          fullText += `Page ${i}:\n${pageText}\n\n`;
-        }
-        
-        if (pdf.numPages > maxPages) {
-          fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
-        }
-        
-        console.log(`Extracted ${fullText.length} characters from PDF`);
-        return fullText;
-      } catch (pdfError) {
-        console.error('Error extracting text from PDF:', pdfError);
-        return `(PDF file: "${file.name}" - Failed to extract content: ${pdfError.message})`;
+      // Extract text from PDF using pdf.js
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      
+      console.log(`PDF loaded with ${pdf.numPages} pages`);
+      
+      let fullText = `PDF File: ${file.name}\n\n`;
+      // Process up to first 20 pages (to avoid very large files)
+      const maxPages = Math.min(pdf.numPages, 20);
+      
+      for (let i = 1; i <= maxPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map((item: any) => item.str).join(' ');
+        fullText += `Page ${i}:\n${pageText}\n\n`;
       }
+      
+      if (pdf.numPages > maxPages) {
+        fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
+      }
+      
+      console.log(`Extracted ${fullText.length} characters from PDF`);
+      return fullText;
     }
     
     // If it's an image or other type, skip or just mention name
@@ -78,11 +77,16 @@ export async function readFileContent(file: File): Promise<string | null> {
  */
 export async function getFileContent(file: any): Promise<string | null> {
   try {
+    // Special handling for URL type files
+    if (file.type === 'application/url' && file.url) {
+      return `External document URL: ${file.url}`;
+    }
+    
     if (!file.url) {
       console.error(`Missing URL for file ${file.name}`);
       return `(File content unavailable for ${file.name})`;
     }
-
+    
     console.log(`Fetching content for file: ${file.name} from URL: ${file.url}`);
     const response = await fetch(file.url);
     
