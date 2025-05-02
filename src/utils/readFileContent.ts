@@ -1,3 +1,4 @@
+
 import * as pdfjs from 'pdfjs-dist';
 
 // Set the PDF.js worker location using the CDN approach instead of direct import
@@ -63,7 +64,12 @@ export async function readFileContent(file: File): Promise<string | null> {
       return fullText;
     }
     
-    // If it's an image or other type, skip or just mention name
+    // Handle image files - provide descriptive information
+    if (mime.startsWith("image/")) {
+      return `[Image File: ${file.name}, Type: ${mime}]\nThis file contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
+    }
+    
+    // If it's another type, skip or just mention name
     return `(File uploaded: ${file.name}, unsupported for content preview)`;
   } catch (error) {
     console.error(`Error reading file ${file.name}:`, error);
@@ -145,9 +151,9 @@ export async function getFileContent(file: any): Promise<string | null> {
         return `(PDF file: ${file.name} - Failed to extract content: ${pdfError.message})`;
       }
     }
-    // For images, return a more descriptive message
+    // For images, return the image URL and descriptive information
     else if (blob.type.startsWith("image/")) {
-      return `Image file: ${file.name} (${blob.type}) - ${blob.size} bytes`;
+      return `[Image File: ${file.name}, Type: ${blob.type}, URL: ${file.url}]\nThis file contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
     }
     // For other types
     else {

@@ -52,7 +52,7 @@ const formatMessageContent = (content: string): React.ReactNode => {
           // End bold if the marker matches the opening marker
           inBold = false;
           segments.push(
-            <strong key={`${lineIndex}-bold-${segments.length}`}>
+            <strong key={`${lineIndex}-bold-${segments.length}`} className="font-bold">
               {currentText}
             </strong>
           );

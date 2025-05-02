@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Send a prompt to the Gemini AI for answering questions
- * Includes support for passing file content context
+ * Includes support for passing file content context and image analysis
  */
 export async function askGemini(prompt: string, fileContext?: string): Promise<string> {
   try {
@@ -12,10 +12,17 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
     
     let enhancedPrompt = prompt;
     let includeFileContent = false;
+    let includesImageAnalysis = false;
     
     if (fileContext) {
       console.log("File context length:", fileContext.length, "characters");
       includeFileContent = true;
+      
+      // Detect if the file context contains an image
+      if (fileContext.includes("[Image File:") && fileContext.includes("URL:")) {
+        includesImageAnalysis = true;
+        console.log("File context includes image for analysis");
+      }
       
       // Limit file context if it's too large to avoid token issues
       if (fileContext.length > 50000) {
@@ -32,14 +39,26 @@ Please return ONLY a numbered list of questions with no preamble or explanation.
 2. Second question here?`;
       } else {
         // Format the prompt to make it clear we're sending file content for context
-        enhancedPrompt = `I have the following file content that I want you to analyze and use to answer my question.
-        
+        if (includesImageAnalysis) {
+          enhancedPrompt = `I have the following file that contains an image that I want you to analyze and use to answer my question.
+          
+File information:
+${fileContext}
+
+My question is: ${prompt}
+
+Please analyze both the image content and any other information provided, and answer my question thoroughly.
+If the image contains charts, graphs, text, or specific visual elements, please describe and analyze them in detail.`;
+        } else {
+          enhancedPrompt = `I have the following file content that I want you to analyze and use to answer my question.
+          
 File content:
 ${fileContext}
 
 My question is: ${prompt}
 
 Please analyze the file content above and answer my question based on that information.`;
+        }
       }
       
       // Enhanced logging to diagnose content issues
@@ -63,6 +82,7 @@ Please analyze the file content above and answer my question based on that infor
       body: { 
         prompt: enhancedPrompt,
         includeFileContent: includeFileContent, // Explicitly signal that file content is included
+        includesImageAnalysis: includesImageAnalysis, // Signal if we're asking for image analysis
         fileContext: fileContext,
         isSuggestionRequest: isSuggestionRequest,
         cacheKey: cacheKey, // Add unique cache key for suggestion requests
