@@ -1,8 +1,7 @@
 
 import * as pdfjs from 'pdfjs-dist';
 
-// Set the PDF.js worker location
-const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.mjs');
+// Set the PDF.js worker location using the CDN approach instead of direct import
 if (typeof window !== 'undefined') {
   pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 }
