@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, fileContext } = await req.json();
+    const { prompt, includeFileContent, fileContext } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -39,17 +39,23 @@ serve(async (req) => {
       );
     }
 
-    // Prepare a better prompt that instructs Gemini to focus on the file content
+    // Determine if this is a suggestion generation request
+    const isSuggestionsRequest = prompt.includes("Generate follow-up questions");
+    
+    // Prepare a better prompt that instructs Gemini based on the request type
     let fullPrompt;
-    if (fileContext) {
-      // Check if file context contains PDF content or just placeholder text
-      const hasPDFContent = fileContext.includes("PDF File:") && 
+    if (includeFileContent) {
+      // Check if file content contains PDF content or just placeholder text
+      const hasPDFContent = fileContext && fileContext.includes("PDF File:") && 
         !fileContext.includes("Content preview unavailable") &&
         fileContext.length > 100;
 
-      // Enhanced prompt for file analysis, especially for PDFs
-      fullPrompt = `I have the following file content that I want you to analyze and use to answer my question:
-      
+      if (isSuggestionsRequest) {
+        fullPrompt = prompt;
+      } else {
+        // Enhanced prompt for file analysis, especially for PDFs
+        fullPrompt = `I have the following file content that I want you to analyze and use to answer my question:
+        
 File content:
 ${fileContext}
 
@@ -58,6 +64,7 @@ ${hasPDFContent ? "Note: This is text extracted from a PDF document. There might
 My question is: ${prompt}
 
 Please analyze the file content provided above and answer my question based only on the information in this file. If the file content doesn't contain enough relevant information to answer my question completely, please let me know what's missing.`;
+      }
     } else {
       fullPrompt = prompt;
     }
@@ -78,10 +85,10 @@ Please analyze the file content provided above and answer my question based only
           }
         ],
         generationConfig: {
-          temperature: 0.7,
+          temperature: isSuggestionsRequest ? 0.9 : 0.7, // Higher temperature for more creative suggestions
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 4096,
+          maxOutputTokens: isSuggestionsRequest ? 1024 : 4096, // Shorter for suggestions
         },
         safetySettings: [
           {

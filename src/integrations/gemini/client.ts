@@ -11,35 +11,48 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
     console.log("File context provided:", fileContext ? "Yes" : "No");
     
     let enhancedPrompt = prompt;
+    let includeFileContent = false;
     
     if (fileContext) {
       console.log("File context length:", fileContext.length, "characters");
+      includeFileContent = true;
+      
       // Limit file context if it's too large to avoid token issues
       if (fileContext.length > 50000) {
         console.log("File context is too large, trimming to 50k chars");
         fileContext = fileContext.substring(0, 50000) + "\n... [Content truncated due to size limitations] ...";
       }
       
-      // Format the prompt to make it clear we're sending file content for context
-      enhancedPrompt = `I have the following file content that I want you to analyze and use to answer my question.
-      
+      // For suggestion generation, we include the file content directly in the prompt
+      if (prompt.includes("Generate follow-up questions")) {
+        enhancedPrompt = prompt;
+      } else {
+        // Format the prompt to make it clear we're sending file content for context
+        enhancedPrompt = `I have the following file content that I want you to analyze and use to answer my question.
+        
 File content:
 ${fileContext}
 
 My question is: ${prompt}
 
 Please analyze the file content above and answer my question based on that information.`;
+      }
       
       // Enhanced logging to diagnose content issues
       console.log("Enhanced prompt with file context, total length:", enhancedPrompt.length);
       console.log("First 500 chars of file context:", fileContext.substring(0, 500) + "...");
     }
     
+    // Check if this is a suggestion request
+    const isSuggestionRequest = prompt.includes("Generate follow-up questions");
+    
     // Call the Supabase Edge Function with improved error handling
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
       body: { 
         prompt: enhancedPrompt,
-        includeFileContent: !!fileContext // Explicitly signal that file content is included
+        includeFileContent: includeFileContent, // Explicitly signal that file content is included
+        fileContext: fileContext,
+        isSuggestionRequest: isSuggestionRequest
       },
     });
 

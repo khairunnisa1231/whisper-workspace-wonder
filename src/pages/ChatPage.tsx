@@ -23,6 +23,8 @@ import { ChatShareDialog } from "@/components/ChatShareDialog";
 import { useSettings } from "@/context/SettingsContext";
 import { ChatStyleSelector } from "@/components/ChatStyleSelector";
 import { ChatSidebar } from "@/components/ChatSidebar";
+import { useGemini } from "@/hooks/use-gemini";
+import { getFileContent } from "@/utils/readFileContent";
 
 function ChatPage() {
   const { isAuthenticated, user } = useAuth();
@@ -30,6 +32,7 @@ function ChatPage() {
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { chatStyle, botImageUrl, setChatStyle } = useSettings();
+  const { getSuggestions, isSuggestionsLoading } = useGemini();
   
   const {
     sessions,
@@ -60,13 +63,7 @@ function ChatPage() {
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
-  // User plan information
-  const userPlan = "Basic";
-  const promptsRemaining = 85;
-  
-  const recommendedPrompts = [
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([
     "Help me draft an email to my boss",
     "Explain machine learning concepts to a beginner",
     "Write a blog post about productivity tips",
@@ -75,12 +72,63 @@ function ChatPage() {
     "Generate ideas for my marketing campaign",
     "Help me troubleshoot my code",
     "Write a story about a space traveler"
-  ];
+  ]);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // User plan information
+  const userPlan = "Basic";
+  const promptsRemaining = 85;
   
   const [isInviteOpen, setIsInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteStatus, setInviteStatus] = useState<null | "success" | "error" | "notfound">(null);
   const [inviteLoading, setInviteLoading] = useState(false);
+
+  // Generate suggestions based on uploaded files and/or last message
+  useEffect(() => {
+    const generateSuggestions = async () => {
+      try {
+        // Only generate when we have messages or files
+        if ((messages.length === 0 && files.length === 0) || isProcessing) {
+          return;
+        }
+
+        // Get the last user message if available
+        const lastUserMessage = [...messages]
+          .reverse()
+          .find(msg => msg.role === 'user')?.content;
+        
+        let fileContext = '';
+        if (files.length > 0) {
+          // Only use the most recent file for suggestions
+          const mostRecentFile = [...files].sort((a, b) => 
+            new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+          )[0];
+          
+          try {
+            const content = await getFileContent(mostRecentFile);
+            if (content) {
+              const trimmedContent = content.substring(0, 5000); // Limit for suggestions generation
+              fileContext = `File: ${mostRecentFile.name}\n${trimmedContent}`;
+            }
+          } catch (error) {
+            console.error(`Error reading file ${mostRecentFile.name} for suggestions:`, error);
+          }
+        }
+
+        const newSuggestions = await getSuggestions(lastUserMessage, fileContext);
+        setSuggestedPrompts(newSuggestions);
+      } catch (error) {
+        console.error("Failed to generate suggestions:", error);
+      }
+    };
+
+    // Generate new suggestions when messages or files change
+    if (!isSuggestionsLoading) {
+      generateSuggestions();
+    }
+  }, [messages, files, getSuggestions, isSuggestionsLoading, isProcessing]);
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -124,7 +172,7 @@ function ChatPage() {
         size: url.length,
         url: url,
         lastModified: Date.now()
-      } as File);
+      } as unknown as File);
       
       if (!isFileViewerOpen) {
         setIsFileViewerOpen(true);
@@ -391,7 +439,7 @@ function ChatPage() {
                     onFileUpload={handleFileInputChange}
                     onUrlUpload={handleUrlUpload}
                     isProcessing={isProcessing}
-                    recommendedPrompts={recommendedPrompts}
+                    recommendedPrompts={suggestedPrompts}
                   />
                 </div>
               </div>
