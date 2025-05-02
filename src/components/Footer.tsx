@@ -9,8 +9,9 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <MessageSquare className="h-6 w-6 text-secondary" />
-              <span className="font-bold text-xl text-primary">Katagrafy.ai</span>
+            <img src="/katagrafy_primary_logo.png" width={"40%"} />
+              {/* <MessageSquare className="h-6 w-6 text-secondary" />
+              <span className="font-bold text-xl text-primary">Katagrafy.aSi</span> */}
             </Link>
             <p className="text-sm text-muted-foreground">
               Your AI powered assistant for smarter, faster conversations.
