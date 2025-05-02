@@ -50,8 +50,7 @@ Please analyze the file content above and answer my question based on that infor
     // Check if this is a suggestion request
     const isSuggestionRequest = prompt.includes("Generate follow-up questions");
     
-    // Generate a unique cache key to avoid using stale suggestion data
-    // Include more context information in the cache key to better differentiate requests
+    // Generate a unique cache key with timestamp to ensure fresh suggestions each time
     const timestamp = Date.now();
     const cacheKey = isSuggestionRequest ? 
       `suggestions-${timestamp}-${fileContext ? 'with-file' : 'no-file'}-${prompt.substring(0, 30)}` : 
@@ -66,7 +65,8 @@ Please analyze the file content above and answer my question based on that infor
         includeFileContent: includeFileContent, // Explicitly signal that file content is included
         fileContext: fileContext,
         isSuggestionRequest: isSuggestionRequest,
-        cacheKey: cacheKey // Add unique cache key for suggestion requests
+        cacheKey: cacheKey, // Add unique cache key for suggestion requests
+        refreshSuggestions: isSuggestionRequest ? true : undefined // Signal to always refresh suggestions
       },
     });
 

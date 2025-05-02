@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, includeFileContent, fileContext, isSuggestionRequest, cacheKey } = await req.json();
+    const { prompt, includeFileContent, fileContext, isSuggestionRequest, cacheKey, refreshSuggestions } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -44,6 +44,9 @@ serve(async (req) => {
     if (cacheKey) {
       console.log("Cache key:", cacheKey);
     }
+    if (refreshSuggestions) {
+      console.log("Force refresh suggestions requested");
+    }
     
     // Prepare a better prompt that instructs Gemini based on the request type
     let fullPrompt;
@@ -56,7 +59,9 @@ serve(async (req) => {
       if (isSuggestionRequest) {
         fullPrompt = `${prompt}
         
-Please return ONLY a numbered list of 3 to 6 relevant questions with no preamble or explanation.
+Please return ONLY a numbered list of 3 to 6 relevant, diverse and specific questions with no preamble or explanation.
+These questions should be different from each other and explore different aspects of the topic.
+Each question should be clear and concise.
 Example format:
 1. First question here?
 2. Second question here?`;
@@ -77,7 +82,9 @@ Please analyze the file content provided above and answer my question based only
       if (isSuggestionRequest) {
         fullPrompt = `${prompt}
         
-Please return ONLY a numbered list of 3 to 6 relevant questions with no preamble or explanation.
+Please return ONLY a numbered list of 3 to 6 relevant, diverse and specific questions with no preamble or explanation.
+These questions should be different from each other and explore different aspects of the topic.
+Each question should be clear and concise.
 Example format:
 1. First question here?
 2. Second question here?`;
@@ -102,10 +109,10 @@ Example format:
           }
         ],
         generationConfig: {
-          temperature: isSuggestionRequest ? 0.7 : 0.5, // Adjusted temperature for better suggestions
+          temperature: isSuggestionRequest ? 0.85 : 0.5, // Higher temperature for more varied suggestions
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: isSuggestionRequest ? 256 : 4096, // Shorter for suggestions
+          maxOutputTokens: isSuggestionRequest ? 350 : 4096, // Increased for better suggestions
         },
         safetySettings: [
           {

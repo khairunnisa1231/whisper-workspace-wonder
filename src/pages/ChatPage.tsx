@@ -63,7 +63,10 @@ function ChatPage() {
   const [selectedMessageIds, setSelectedMessageIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
   
-  // Use memoized state for suggestedPrompts to prevent unnecessary re-renders
+  // Track when suggestions were last updated
+  const [lastSuggestionUpdate, setLastSuggestionUpdate] = useState<number>(Date.now());
+  
+  // Use memoized state for suggestedPrompts
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([
     "Help me understand this document",
     "What are the key points in this file?",
@@ -104,6 +107,11 @@ function ChatPage() {
         const lastUserMessage = [...messages]
           .reverse()
           .find(msg => msg.role === 'user')?.content;
+          
+        // Get the last assistant message if available to generate better follow-ups
+        const lastAssistantMessage = [...messages]
+          .reverse()
+          .find(msg => msg.role === 'assistant')?.content;
         
         let fileContext = '';
         if (files.length > 0) {
@@ -126,8 +134,13 @@ function ChatPage() {
         // Only proceed if the component is still mounted
         if (!isMounted) return;
 
-        // Add a slight delay to prevent too frequent API calls
-        const newSuggestions = await getSuggestions(lastUserMessage, fileContext);
+        // Generate new suggestions with added context from assistant's last reply
+        let lastQuestionContext = lastUserMessage;
+        if (lastAssistantMessage && lastUserMessage) {
+          lastQuestionContext = `${lastUserMessage} (Last AI response: ${lastAssistantMessage.substring(0, 200)}${lastAssistantMessage.length > 200 ? '...' : ''})`;
+        }
+
+        const newSuggestions = await getSuggestions(lastQuestionContext, fileContext);
         if (isMounted && newSuggestions.length > 0) {
           console.log("New suggestions generated:", newSuggestions);
           setSuggestedPrompts(newSuggestions);
@@ -137,18 +150,18 @@ function ChatPage() {
       }
     };
 
-    // Debounce the suggestions generation to prevent rapid re-fetching
+    // Generate suggestions when messages change or lastSuggestionUpdate is updated
     const debounceTimer = setTimeout(() => {
       if (!isSuggestionsLoading) {
         generateSuggestions();
       }
-    }, 1500); // Increased debounce time to reduce frequency
+    }, 1000);
 
     return () => {
       isMounted = false;
       clearTimeout(debounceTimer);
     };
-  }, [messages, files, getSuggestions, isSuggestionsLoading, isProcessing]);
+  }, [messages, files, getSuggestions, isSuggestionsLoading, isProcessing, lastSuggestionUpdate]);
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -172,6 +185,9 @@ function ChatPage() {
         setIsFileViewerOpen(true);
         setIsFileViewerMinimized(false);
       }
+      
+      // Update suggestions after file upload
+      setLastSuggestionUpdate(Date.now());
     } catch (error) {
       console.error('Error uploading file:', error);
     }
@@ -198,6 +214,9 @@ function ChatPage() {
         setIsFileViewerOpen(true);
         setIsFileViewerMinimized(false);
       }
+      
+      // Update suggestions after URL upload
+      setLastSuggestionUpdate(Date.now());
       
       return true;
     } catch (error) {
@@ -263,12 +282,18 @@ function ChatPage() {
     setActiveWorkspace(workspaceId);
   }, [setActiveWorkspace]);
 
-  // Memoize handlers to prevent unnecessary re-renders
+  // Modified message handler to also update suggestions after sending
   const handleSendMessageWithLog = useCallback(async (content: string) => {
     console.log('Sending message:', content);
     try {
       await handleSendMessage(content);
       console.log('Message sent successfully, messages length:', messages.length + 1);
+      
+      // After sending a message and getting a response, update suggestions
+      // We use a slight delay to ensure the response has been received
+      setTimeout(() => {
+        setLastSuggestionUpdate(Date.now());
+      }, 500);
     } catch (error) {
       console.error('Error sending message:', error);
     }
