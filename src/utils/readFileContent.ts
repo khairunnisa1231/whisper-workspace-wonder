@@ -1,4 +1,12 @@
 
+import * as pdfjs from 'pdfjs-dist';
+
+// Set the PDF.js worker location
+const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.mjs');
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+}
+
 /**
  * Util: Reads file content as text if it's a supported type, or returns null.
  * Used for providing file context to Gemini AI prompts.
@@ -27,8 +35,34 @@ export async function readFileContent(file: File): Promise<string | null> {
     }
     
     if (mime === "application/pdf") {
-      // For PDFs we cannot read in the browser directly, so fallback to name only
-      return `(PDF file uploaded: "${file.name}" - Content preview unavailable)`;
+      try {
+        // Extract text from PDF using pdf.js
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        
+        console.log(`PDF loaded with ${pdf.numPages} pages`);
+        
+        let fullText = `PDF File: ${file.name}\n\n`;
+        // Process up to first 20 pages (to avoid very large files)
+        const maxPages = Math.min(pdf.numPages, 20);
+        
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += `Page ${i}:\n${pageText}\n\n`;
+        }
+        
+        if (pdf.numPages > maxPages) {
+          fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
+        }
+        
+        console.log(`Extracted ${fullText.length} characters from PDF`);
+        return fullText;
+      } catch (pdfError) {
+        console.error('Error extracting text from PDF:', pdfError);
+        return `(PDF file: "${file.name}" - Failed to extract content: ${pdfError.message})`;
+      }
     }
     
     // If it's an image or other type, skip or just mention name
@@ -78,9 +112,35 @@ export async function getFileContent(file: any): Promise<string | null> {
       console.log(`Successfully extracted text from ${file.name}, length: ${text.length} chars`);
       return text;
     } 
-    // For PDFs, just return file name and type
+    // For PDFs, extract content using pdf.js
     else if (blob.type === "application/pdf") {
-      return `PDF file: ${file.name} (Content preview unavailable in this format)`;
+      try {
+        const arrayBuffer = await blob.arrayBuffer();
+        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        
+        console.log(`PDF loaded with ${pdf.numPages} pages`);
+        
+        let fullText = `PDF File: ${file.name}\n\n`;
+        // Process up to first 20 pages (to avoid very large files)
+        const maxPages = Math.min(pdf.numPages, 20);
+        
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += `Page ${i}:\n${pageText}\n\n`;
+        }
+        
+        if (pdf.numPages > maxPages) {
+          fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
+        }
+        
+        console.log(`Extracted ${fullText.length} characters from PDF`);
+        return fullText;
+      } catch (pdfError) {
+        console.error('Error extracting text from PDF:', pdfError);
+        return `(PDF file: ${file.name} - Failed to extract content: ${pdfError.message})`;
+      }
     }
     // For images, return a more descriptive message
     else if (blob.type.startsWith("image/")) {

@@ -42,14 +42,22 @@ serve(async (req) => {
     // Prepare a better prompt that instructs Gemini to focus on the file content
     let fullPrompt;
     if (fileContext) {
-      fullPrompt = `I have the following file content that I want you to analyze and use to answer my question.
+      // Check if file context contains PDF content or just placeholder text
+      const hasPDFContent = fileContext.includes("PDF File:") && 
+        !fileContext.includes("Content preview unavailable") &&
+        fileContext.length > 100;
+
+      // Enhanced prompt for file analysis, especially for PDFs
+      fullPrompt = `I have the following file content that I want you to analyze and use to answer my question:
       
 File content:
 ${fileContext}
 
+${hasPDFContent ? "Note: This is text extracted from a PDF document. There might be some formatting issues or missing elements." : ""}
+
 My question is: ${prompt}
 
-Based on the file content provided above, please answer my question. If the file content doesn't contain relevant information to answer my question, please let me know.`;
+Please analyze the file content provided above and answer my question based only on the information in this file. If the file content doesn't contain enough relevant information to answer my question completely, please let me know what's missing.`;
     } else {
       fullPrompt = prompt;
     }

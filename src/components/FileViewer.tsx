@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -39,9 +40,10 @@ export function FileViewer({
       
       setIsLoading(true);
       try {
-        // Only attempt to load content for text-based files
+        // Only attempt to load content for text-based files or PDFs
         if (selectedFile.type.startsWith('text/') || 
             selectedFile.type === 'application/json' || 
+            selectedFile.type === 'application/pdf' ||
             selectedFile.name.endsWith('.md') || 
             selectedFile.name.endsWith('.js') || 
             selectedFile.name.endsWith('.ts') || 
@@ -127,12 +129,29 @@ export function FileViewer({
     
     if (selectedFile.type === "application/pdf") {
       return (
-        <div className="p-4 h-[400px]">
-          <iframe
-            src={selectedFile.url}
-            className="w-full h-full border-0"
-            title={selectedFile.name}
-          />
+        <div className="flex flex-col gap-2">
+          <div className="p-4 h-[300px]">
+            <iframe
+              src={selectedFile.url}
+              className="w-full h-full border-0"
+              title={selectedFile.name}
+            />
+          </div>
+          {fileContent && (
+            <div className="p-4">
+              <details>
+                <summary className="cursor-pointer font-medium text-sm mb-2">
+                  View extracted text content
+                </summary>
+                <pre className="whitespace-pre-wrap break-words bg-muted p-4 rounded-lg overflow-auto max-h-[300px] text-sm">
+                  {fileContent}
+                </pre>
+              </details>
+              <div className="mt-4 text-xs text-muted-foreground">
+                <p>This extracted text content is visible to Gemini AI and will be used to answer your questions about the file.</p>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
