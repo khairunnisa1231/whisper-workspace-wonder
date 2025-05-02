@@ -17,7 +17,8 @@ export interface WorkspaceFile {
   workspaceId: string;
   userId: string;
   uploadedAt: Date;
-  content?: string; // Add optional content property
+  created_at?: string; // Add this property to match what's used in the components
+  content?: string; // Keep the optional content property
 }
 
 export interface ChatSession {

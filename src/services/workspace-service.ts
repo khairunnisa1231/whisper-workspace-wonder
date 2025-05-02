@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { Workspace, WorkspaceFile, ChatSession, ChatMessage } from "@/models/workspace";
 import { readFileContent } from "@/utils/readFileContent";
@@ -141,7 +142,8 @@ export async function uploadWorkspaceFile(
     url: publicUrl,
     workspaceId: data.workspace_id,
     userId: data.user_id,
-    uploadedAt: new Date(data.created_at)
+    uploadedAt: new Date(data.created_at), // Convert created_at from database to uploadedAt in our model
+    created_at: data.created_at // Keep the original created_at for backward compatibility
   };
 }
 
@@ -172,7 +174,8 @@ export async function fetchWorkspaceFiles(workspaceId: string): Promise<Workspac
       url: publicUrl,
       workspaceId: file.workspace_id,
       userId: file.user_id,
-      uploadedAt: new Date(file.created_at)
+      uploadedAt: new Date(file.created_at), // Convert created_at from database to uploadedAt in our model
+      created_at: file.created_at // Keep the original created_at for backward compatibility
     };
   });
 }

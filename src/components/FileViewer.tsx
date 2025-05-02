@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -243,7 +242,7 @@ export function FileViewer({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatFileSize(Number(file.size))} • {new Date(file.created_at).toLocaleDateString()}
+                        {formatFileSize(Number(file.size))} • {new Date(file.uploadedAt).toLocaleDateString()}
                       </p>
                     </div>
                   </div>

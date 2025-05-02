@@ -227,7 +227,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         
         // Only use the 3 most recent files to avoid overloading the context
         const recentFiles = [...files].sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
         ).slice(0, 3);
         
         console.log('Using the most recent files for context:', recentFiles.map(f => f.name).join(', '));
