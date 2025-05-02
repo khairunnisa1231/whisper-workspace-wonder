@@ -17,7 +17,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, includeFileContent, fileContext } = await req.json();
+    const { prompt, includeFileContent, fileContext, isSuggestionRequest, cacheKey } = await req.json();
 
     if (!prompt) {
       return new Response(
@@ -39,8 +39,11 @@ serve(async (req) => {
       );
     }
 
-    // Determine if this is a suggestion generation request
-    const isSuggestionsRequest = prompt.includes("Generate follow-up questions");
+    // Log request type for debugging
+    console.log("Request type:", isSuggestionRequest ? "Suggestions" : "Regular query");
+    if (cacheKey) {
+      console.log("Cache key:", cacheKey);
+    }
     
     // Prepare a better prompt that instructs Gemini based on the request type
     let fullPrompt;
@@ -50,8 +53,13 @@ serve(async (req) => {
         !fileContext.includes("Content preview unavailable") &&
         fileContext.length > 100;
 
-      if (isSuggestionsRequest) {
-        fullPrompt = prompt;
+      if (isSuggestionRequest) {
+        fullPrompt = `${prompt}
+        
+Please return ONLY a numbered list of 5 relevant questions with no preamble or explanation.
+Example format:
+1. First question here?
+2. Second question here?`;
       } else {
         // Enhanced prompt for file analysis, especially for PDFs
         fullPrompt = `I have the following file content that I want you to analyze and use to answer my question:
@@ -66,7 +74,16 @@ My question is: ${prompt}
 Please analyze the file content provided above and answer my question based only on the information in this file. If the file content doesn't contain enough relevant information to answer my question completely, please let me know what's missing.`;
       }
     } else {
-      fullPrompt = prompt;
+      if (isSuggestionRequest) {
+        fullPrompt = `${prompt}
+        
+Please return ONLY a numbered list of 5 relevant questions with no preamble or explanation.
+Example format:
+1. First question here?
+2. Second question here?`;
+      } else {
+        fullPrompt = prompt;
+      }
     }
 
     console.log("Sending prompt to Gemini API:", fullPrompt.substring(0, 100) + "...");
@@ -85,10 +102,10 @@ Please analyze the file content provided above and answer my question based only
           }
         ],
         generationConfig: {
-          temperature: isSuggestionsRequest ? 0.9 : 0.7, // Higher temperature for more creative suggestions
+          temperature: isSuggestionRequest ? 0.9 : 0.7, // Higher temperature for more creative suggestions
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: isSuggestionsRequest ? 1024 : 4096, // Shorter for suggestions
+          maxOutputTokens: isSuggestionRequest ? 1024 : 4096, // Shorter for suggestions
         },
         safetySettings: [
           {
@@ -131,8 +148,22 @@ Please analyze the file content provided above and answer my question based only
     const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || 
       "I'm sorry, I couldn't generate an answer at this time. Please try again later.";
 
+    // For suggestions, ensure we're returning a properly formatted list
+    let formattedAnswer = answer;
+    if (isSuggestionRequest) {
+      // Extract numbered lines if they exist
+      const lines = answer.split('\n').filter(line => line.trim().length > 0);
+      const numberedLines = lines.filter(line => /^\d+\./.test(line.trim()));
+      
+      if (numberedLines.length > 0) {
+        formattedAnswer = numberedLines.join('\n');
+      }
+      
+      console.log("Returning suggestions:", formattedAnswer.substring(0, 100) + (formattedAnswer.length > 100 ? "..." : ""));
+    }
+
     return new Response(
-      JSON.stringify({ answer }),
+      JSON.stringify({ answer: formattedAnswer }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

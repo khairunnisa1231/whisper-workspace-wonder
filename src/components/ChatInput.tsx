@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -79,11 +80,16 @@ export function ChatInput({
     recommendedPrompts?.slice(0, 4) || [], 
     [recommendedPrompts]
   );
-  
+
   // Show suggestions when the input is empty
   useEffect(() => {
     setShowSuggestions(!message.trim());
   }, [message]);
+  
+  useEffect(() => {
+    // Log when recommended prompts change to help debug
+    console.log("Recommended prompts updated:", recommendedPrompts);
+  }, [recommendedPrompts]);
   
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +100,8 @@ export function ChatInput({
     onSendMessage(message);
     // Clear the input after sending the message
     setMessage(""); 
+    // Always show suggestions after sending a message
+    setShowSuggestions(true);
   }, [message, isProcessing, onSendMessage]);
   
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -152,6 +160,7 @@ export function ChatInput({
   
   const handlePromptSelect = useCallback((prompt: string) => {
     setMessage(prompt);
+    setShowSuggestions(false); // Hide suggestions after selecting one
     if (textareaRef.current) {
       textareaRef.current.focus();
     }
@@ -242,7 +251,7 @@ export function ChatInput({
         </div>
       )}
       
-      {showSuggestions && (
+      {showSuggestions && displayedPrompts.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-3">
           {displayedPrompts.map((prompt, index) => (
             <Button

@@ -50,6 +50,14 @@ Please analyze the file content above and answer my question based on that infor
     // Check if this is a suggestion request
     const isSuggestionRequest = prompt.includes("Generate follow-up questions");
     
+    // Generate a unique cache key to avoid using stale suggestion data
+    const timestamp = Date.now();
+    const cacheKey = isSuggestionRequest ? 
+      `suggestions-${timestamp}-${prompt.substring(0, 50)}` : 
+      undefined;
+    
+    console.log("Cache key for request:", cacheKey || "none (not a suggestion request)");
+    
     // Call the Supabase Edge Function with improved error handling
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
       body: { 
@@ -57,7 +65,7 @@ Please analyze the file content above and answer my question based on that infor
         includeFileContent: includeFileContent, // Explicitly signal that file content is included
         fileContext: fileContext,
         isSuggestionRequest: isSuggestionRequest,
-        cacheKey: isSuggestionRequest ? prompt.substring(0, 100) : undefined // Add cache key for suggestion requests
+        cacheKey: cacheKey // Add unique cache key for suggestion requests
       },
     });
 

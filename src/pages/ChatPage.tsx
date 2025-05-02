@@ -132,6 +132,7 @@ function ChatPage() {
         const newSuggestions = await getSuggestions(lastUserMessage, fileContext);
         if (isMounted && newSuggestions.length > 0) {
           setSuggestedPrompts(newSuggestions);
+          console.log("New suggestions generated:", newSuggestions);
         }
       } catch (error) {
         console.error("Failed to generate suggestions:", error);

@@ -42,7 +42,15 @@ export function useGemini() {
 
   const getSuggestions = async (lastQuestion?: string, fileContext?: string): Promise<string[]> => {
     // Compare with last context to avoid unnecessary fetches
-    const newContext = { lastQuestion, fileContext: fileContext ? 'yes' : undefined };
+    const newContext = { 
+      lastQuestion, 
+      fileContext: fileContext ? 'yes' : undefined 
+    };
+    
+    // Debug the context comparison
+    console.log("Current context:", JSON.stringify(newContext));
+    console.log("Last context:", JSON.stringify(lastSuggestionsContext));
+    
     const contextsEqual = JSON.stringify(newContext) === JSON.stringify(lastSuggestionsContext);
     
     // If we're already loading suggestions or context hasn't changed, don't fetch again
@@ -54,6 +62,7 @@ export function useGemini() {
     try {
       setIsSuggestionsLoading(true);
       setLastSuggestionsContext(newContext);
+      console.log("Fetching new suggestions with context:", JSON.stringify(newContext));
 
       let prompt = "Generate 5 follow-up questions that would be useful for the user to ask next. ";
       
@@ -71,6 +80,7 @@ export function useGemini() {
       prompt += " Return ONLY the questions as a numbered list, with no additional text.";
       
       const suggestionsText = await askGemini(prompt, undefined);
+      console.log("Received suggestions text:", suggestionsText);
       
       // Parse the numbered list into array of questions
       const suggestions = suggestionsText
@@ -80,13 +90,21 @@ export function useGemini() {
         .filter(question => question.length > 0)
         .slice(0, 5); // Limit to 5 questions
       
-      return suggestions.length > 0 ? suggestions : [
-        "Can you explain more about this document?",
-        "What are the main points in this file?",
-        "Can you summarize this for me?",
-        "What are the key insights from this information?",
-        "How would you analyze this content?"
-      ];
+      console.log("Parsed suggestions:", suggestions);
+      
+      if (suggestions.length > 0) {
+        return suggestions;
+      } else {
+        // Fallback if parsing fails
+        console.log("Using fallback suggestions");
+        return [
+          "Can you explain more about this document?",
+          "What are the main points in this file?",
+          "Can you summarize this for me?",
+          "What are the key insights from this information?",
+          "How would you analyze this content?"
+        ];
+      }
     } catch (err) {
       console.error("Error getting suggestions:", err);
       // Return default questions if there's an error
