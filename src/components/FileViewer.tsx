@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { File, Maximize2, Minimize2, Trash2, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { WorkspaceFile } from "@/models/workspace";
 import { useToast } from "@/hooks/use-toast";
+import { getFileContent } from "@/utils/readFileContent";
 
 interface FileViewerProps {
   files: WorkspaceFile[];
@@ -23,8 +25,49 @@ export function FileViewer({
 }: FileViewerProps) {
   
   const [selectedFile, setSelectedFile] = useState<WorkspaceFile | null>(null);
+  const [fileContent, setFileContent] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  
+  // Load file content when a file is selected
+  useEffect(() => {
+    async function loadFileContent() {
+      if (!selectedFile) {
+        setFileContent(null);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        // Only attempt to load content for text-based files
+        if (selectedFile.type.startsWith('text/') || 
+            selectedFile.type === 'application/json' || 
+            selectedFile.name.endsWith('.md') || 
+            selectedFile.name.endsWith('.js') || 
+            selectedFile.name.endsWith('.ts') || 
+            selectedFile.name.endsWith('.css')) {
+          
+          const content = await getFileContent(selectedFile);
+          setFileContent(content);
+        } else {
+          setFileContent(null);
+        }
+      } catch (error) {
+        console.error('Error loading file content:', error);
+        toast({
+          title: 'Error',
+          description: 'Could not load file content',
+          variant: 'destructive'
+        });
+        setFileContent(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadFileContent();
+  }, [selectedFile, toast]);
   
   const formatFileSize = (sizeInBytes: number): string => {
     if (sizeInBytes < 1024) {
@@ -43,6 +86,7 @@ export function FileViewer({
       setIsDeleting(true);
       await onDelete(fileId);
       setSelectedFile(null);
+      setFileContent(null);
       toast({
         title: "Success",
         description: "File deleted successfully"
@@ -61,6 +105,14 @@ export function FileViewer({
   
   const renderFilePreview = () => {
     if (!selectedFile) return null;
+    
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center p-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
     
     if (selectedFile.type.startsWith("image/")) {
       return (
@@ -86,12 +138,15 @@ export function FileViewer({
       );
     }
     
-    if (selectedFile.type.includes('text/') || selectedFile.type === 'application/json') {
+    if (fileContent) {
       return (
         <div className="p-4">
-          <pre className="whitespace-pre-wrap break-words bg-muted p-4 rounded-lg">
-            {selectedFile.content || 'Loading content...'}
+          <pre className="whitespace-pre-wrap break-words bg-muted p-4 rounded-lg overflow-auto max-h-[400px] text-sm">
+            {fileContent}
           </pre>
+          <div className="mt-4 text-xs text-muted-foreground">
+            This content is visible to Gemini AI and will be used to answer your questions about the file.
+          </div>
         </div>
       );
     }
@@ -173,7 +228,8 @@ export function FileViewer({
             {files.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-4 text-center text-muted-foreground">
                 <File size={32} className="mb-2" />
-                <p className="text-sm">No files to display</p>
+                <p className="text-sm">No files uploaded</p>
+                <p className="text-xs mt-2">Upload files for Gemini to analyze and answer questions about.</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -186,7 +242,9 @@ export function FileViewer({
                     <File size={20} className="text-muted-foreground" />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.name}</p>
-                      <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatFileSize(Number(file.size))} • {new Date(file.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
                 ))}

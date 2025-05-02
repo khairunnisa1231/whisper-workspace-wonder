@@ -18,7 +18,9 @@ export async function readFileContent(file: File): Promise<string | null> {
         file.name.endsWith('.ts') ||
         file.name.endsWith('.tsx') ||
         file.name.endsWith('.jsx') ||
-        file.name.endsWith('.css')) {
+        file.name.endsWith('.css') ||
+        file.name.endsWith('.html') ||
+        file.name.endsWith('.csv')) {
       const text = await file.text();
       console.log(`Successfully read text content from ${file.name}, length: ${text.length} chars`);
       return text;
@@ -69,7 +71,9 @@ export async function getFileContent(file: any): Promise<string | null> {
         file.name.endsWith('.ts') ||
         file.name.endsWith('.tsx') ||
         file.name.endsWith('.jsx') ||
-        file.name.endsWith('.css')) {
+        file.name.endsWith('.css') ||
+        file.name.endsWith('.html') ||
+        file.name.endsWith('.csv')) {
       const text = await blob.text();
       console.log(`Successfully extracted text from ${file.name}, length: ${text.length} chars`);
       return text;

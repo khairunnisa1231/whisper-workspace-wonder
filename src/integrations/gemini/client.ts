@@ -10,6 +10,8 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
     console.log("Calling Gemini with prompt:", prompt.substring(0, 100) + (prompt.length > 100 ? "..." : ""));
     console.log("File context provided:", fileContext ? "Yes" : "No");
     
+    let enhancedPrompt = prompt;
+    
     if (fileContext) {
       console.log("File context length:", fileContext.length, "characters");
       // Limit file context if it's too large to avoid token issues
@@ -18,15 +20,25 @@ export async function askGemini(prompt: string, fileContext?: string): Promise<s
         fileContext = fileContext.substring(0, 50000) + "\n... [Content truncated due to size limitations] ...";
       }
       
+      // Format the prompt to make it clear we're sending file content for context
+      enhancedPrompt = `I have the following file content that I want you to analyze and use to answer my question.
+      
+File content:
+${fileContext}
+
+My question is: ${prompt}
+
+Please analyze the file content above and answer my question based on that information.`;
+      
       // Enhanced logging to diagnose content issues
-      console.log("File context sample:", fileContext.substring(0, 500) + "...");
+      console.log("Enhanced prompt with file context, total length:", enhancedPrompt.length);
+      console.log("First 500 chars of file context:", fileContext.substring(0, 500) + "...");
     }
     
     // Call the Supabase Edge Function with improved error handling
     const { data, error } = await supabase.functions.invoke('gemini-faq', {
       body: { 
-        prompt,
-        fileContext,
+        prompt: enhancedPrompt,
         includeFileContent: !!fileContext // Explicitly signal that file content is included
       },
     });

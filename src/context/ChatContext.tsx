@@ -224,12 +224,23 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       let fileContext = '';
       if (files.length > 0) {
         console.log('Processing files for context:', files.length);
+        
+        // Only use the 3 most recent files to avoid overloading the context
+        const recentFiles = [...files].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 3);
+        
+        console.log('Using the most recent files for context:', recentFiles.map(f => f.name).join(', '));
+        
         const fileContents = await Promise.all(
-          files.slice(0, 5).map(async file => {
+          recentFiles.map(async file => {
             try {
               console.log('Reading content for file:', file.name);
               const fileContent = await getFileContent(file);
-              return `File: ${file.name}\n${fileContent || "Content not available for processing"}\n\n`;
+              if (fileContent && fileContent.length > 0) {
+                return `File: ${file.name}\n${fileContent}\n\n`;
+              }
+              return `File: ${file.name}\nContent not available for processing\n\n`;
             } catch (error) {
               console.error(`Error reading file ${file.name}:`, error);
               return `File: ${file.name}\nUnable to extract content for processing.\n\n`;
@@ -238,11 +249,14 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         );
         
         fileContext = fileContents.join('\n');
-        console.log('Assembled file context:', fileContext.substring(0, 200) + '...');
+        console.log('Assembled file context, total length:', fileContext.length, 'characters');
+        if (fileContext.length > 0) {
+          console.log('Sample of file context:', fileContext.substring(0, 200) + '...');
+        }
       }
       
       console.log('Sending to Gemini with file context:', fileContext ? 'Yes' : 'No');
-      const answer = await askGemini(content, fileContext);
+      const answer = await askGemini(content, fileContext || undefined);
       console.log('Received answer from Gemini');
       
       const aiMessage = await addChatMessage(sessionId, answer, 'assistant');
