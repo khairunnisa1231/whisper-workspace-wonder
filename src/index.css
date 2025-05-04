@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
@@ -86,6 +87,10 @@
 
   .glass-panel {
     @apply bg-white/10 backdrop-blur-lg border border-white/20 rounded-xl shadow-lg dark:bg-black/10 dark:border-white/10;
+  }
+  
+  .glass-navbar {
+    @apply bg-secondary/10 backdrop-blur-md border-b border-white/10 shadow-sm;
   }
 
   .chat-container {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -57,11 +58,11 @@ export function Navbar() {
   );
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm">
+    <header className="sticky top-0 z-50 w-full bg-secondary/10 backdrop-blur-md supports-[backdrop-filter]:bg-secondary/5 border-b border-border/40 shadow-sm">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <img src="/katagrafy_logo_mark.png" className="h-8 w-auto" />
-          <span className="font-bold text-xl text-primary hidden sm:inline-block">Katagrafy.ai</span>
+          <span className="font-bold text-xl bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent hidden sm:inline-block">Katagrafy.ai</span>
         </Link>
         
         {/* Desktop Navigation */}
@@ -157,7 +158,7 @@ export function Navbar() {
       
       {/* Mobile Navigation Dropdown */}
       {isMenuOpen && (
-        <div className="md:hidden border-t border-border/40 bg-background animate-fade-in">
+        <div className="md:hidden border-t border-border/40 bg-secondary/5 backdrop-blur-md animate-fade-in">
           <div className="container py-4 flex flex-col gap-4">
             {isHomePage && (
               <>
