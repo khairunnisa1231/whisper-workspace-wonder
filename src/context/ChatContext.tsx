@@ -15,7 +15,7 @@ import {
   deleteWorkspaceFile
 } from '@/services/workspace-service';
 import { askGemini } from '@/integrations/gemini/client';
-import { readFileContent, getFileContent } from '@/utils/readFileContent';
+import { readFileContent, getFileContent, fetchUrlContent } from '@/utils/readFileContent';
 
 interface ChatContextType {
   sessions: ChatSession[];
@@ -235,8 +235,17 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         const fileContents = await Promise.all(
           recentFiles.map(async file => {
             try {
-              console.log('Reading content for file:', file.name);
-              const fileContent = await getFileContent(file);
+              console.log('Reading content for file:', file.name, file.type);
+              let fileContent;
+              
+              // Handle URL files explicitly
+              if (file.type === 'application/url' && file.url) {
+                console.log('Processing URL file content:', file.url);
+                fileContent = await fetchUrlContent(file.url);
+              } else {
+                fileContent = await getFileContent(file);
+              }
+              
               if (fileContent && fileContent.length > 0) {
                 return `File: ${file.name}\n${fileContent}\n\n`;
               }
@@ -319,7 +328,35 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     }
     
     try {
-      console.log('Uploading file:', file.name);
+      console.log('Uploading file:', file.name, file.type);
+      
+      // Handle URL type files specially
+      if (file.type === 'application/url' && (file as any).url) {
+        console.log('Processing URL as file:', (file as any).url);
+        
+        // Create a special file object for URL references
+        const urlFile = {
+          id: `url-${Date.now()}`,
+          name: file.name || 'URL Document',
+          type: 'application/url',
+          url: (file as any).url,
+          size: ((file as any).url as string).length,
+          uploadedAt: new Date().toISOString(),
+          workspaceId: activeWorkspaceId,
+          userId: user.id
+        };
+        
+        console.log('Created URL file object:', urlFile);
+        setFiles(prev => [...prev, urlFile as WorkspaceFile]);
+        
+        toast({
+          title: 'Success',
+          description: 'URL document added successfully'
+        });
+        return;
+      }
+      
+      // Normal file upload flow
       const uploadedFile = await uploadWorkspaceFile(activeWorkspaceId, user.id, file);
       console.log('File uploaded successfully:', uploadedFile);
       
@@ -343,8 +380,21 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   const handleDeleteFile = async (fileId: string): Promise<void> => {
     try {
       console.log('Deleting file with ID:', fileId);
-      await deleteWorkspaceFile(fileId);
       
+      // Handle URL type files that don't need to be deleted from storage
+      if (fileId.startsWith('url-')) {
+        console.log('Removing URL reference file:', fileId);
+        setFiles(prev => prev.filter(f => f.id !== fileId));
+        
+        toast({
+          title: 'Success',
+          description: 'URL document removed successfully'
+        });
+        return;
+      }
+      
+      // Normal file deletion flow
+      await deleteWorkspaceFile(fileId);
       setFiles(prev => prev.filter(f => f.id !== fileId));
       
       toast({

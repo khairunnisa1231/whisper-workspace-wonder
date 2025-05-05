@@ -16,7 +16,9 @@ export async function readFileContent(file: File): Promise<string | null> {
     
     // Special handling for URL type files
     if (file.type === 'application/url' && 'url' in file) {
-      return await fetchUrlContent((file as any).url);
+      console.log('Processing URL file:', (file as any).url);
+      const url = (file as any).url;
+      return await fetchUrlContent(url);
     }
     
     // Handle text, pdf, markdown, code files
@@ -78,7 +80,7 @@ export async function readFileContent(file: File): Promise<string | null> {
 }
 
 /**
- * Fetches content directly from a URL, with support for different document types
+ * Fetches content directly from a URL, with improved error handling and formatting
  */
 export async function fetchUrlContent(url: string): Promise<string | null> {
   try {
@@ -95,10 +97,8 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       return `Invalid URL format: ${url}`;
     }
     
-    // Fetch the content
+    // Fetch the content with improved error handling
     const response = await fetch(url, { 
-      // Use no-cors for cross-origin requests that would otherwise fail
-      // But note this limits what we can do with the response
       mode: 'cors',
       headers: {
         'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain,application/pdf,*/*'
@@ -212,6 +212,7 @@ export async function getFileContent(file: any): Promise<string | null> {
   try {
     // Special handling for URL type files
     if (file.type === 'application/url' && file.url) {
+      console.log(`Getting content from URL file: ${file.name}, URL: ${file.url}`);
       return await fetchUrlContent(file.url);
     }
     
@@ -275,7 +276,7 @@ export async function getFileContent(file: any): Promise<string | null> {
         return fullText;
       } catch (pdfError) {
         console.error('Error extracting text from PDF:', pdfError);
-        return `(PDF file: ${file.name} - Failed to extract content: ${pdfError.message})`;
+        return `(PDF file: ${file.name} - Failed to extract content: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'})`;
       }
     }
     // For images, return the image URL and descriptive information
@@ -289,5 +290,16 @@ export async function getFileContent(file: any): Promise<string | null> {
   } catch (error) {
     console.error(`Error reading file ${file.name}:`, error);
     return `Error reading file ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+}
+
+// For debugging purposes, export a simplified test function for URL content
+export async function testUrlFetch(url: string): Promise<string> {
+  try {
+    const content = await fetchUrlContent(url);
+    return content || 'No content could be fetched';
+  } catch (error) {
+    console.error('Test URL fetch error:', error);
+    return `Error testing URL fetch: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
