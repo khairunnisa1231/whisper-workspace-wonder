@@ -70,11 +70,45 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       return `Invalid URL format: ${url}`;
     }
     
-    // For external URLs that might have CORS issues, use the Gemini function to fetch content
-    // This is needed because direct fetch from browser may fail due to CORS
+    // Special handling for Wikipedia URLs
+    if (url.includes('wikipedia.org')) {
+      const isWikiArticle = url.includes('/wiki/');
+      if (isWikiArticle) {
+        // For Wikipedia articles, try to improve the request
+        const improvedUrl = url.includes('?') ? 
+          `${url}&action=render` : // Add render parameter to existing URL with parameters
+          `${url}?action=render`;  // Add render parameter as first parameter
+        
+        console.log(`Attempting to use Wikipedia render mode: ${improvedUrl}`);
+        
+        try {
+          // First try with the server-side fetch using improved URL
+          const response = await fetch('/api/gemini-faq', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: `Fetch and return only the raw content from this URL without any analysis: ${improvedUrl}`,
+              rawUrlFetch: true,
+            }),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.answer && typeof data.answer === 'string' && !data.answer.startsWith('Error')) {
+              console.log('Successfully fetched Wikipedia content in render mode');
+              return `Wikipedia article: ${url}\n\n${data.answer}`;
+            }
+          }
+        } catch (renderError) {
+          console.error('Error with Wikipedia render mode:', renderError);
+        }
+      }
+    }
+    
+    // Use the Supabase Edge Function for fetching external URLs
     try {
-      // Use the Supabase Edge Function for fetching external URLs
-      // This avoids CORS issues by fetching server-side
       const response = await fetch('/api/gemini-faq', {
         method: 'POST',
         headers: {
@@ -115,12 +149,14 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       if (!directResponse.ok) {
         return `Failed to fetch content from ${url}: ${directResponse.status} ${directResponse.statusText}. 
         
-This is likely due to CORS restrictions - the website doesn't allow direct access from web applications.
+**CORS Restriction Detected**
 
-For Wikipedia or similar sites with CORS restrictions, you can:
-1. Download the page content manually
-2. Upload the file directly instead of using a URL
-3. Try using the site's API if available (e.g., Wikipedia has an API)`;
+This website does not allow direct access from web applications due to CORS restrictions.
+
+For Wikipedia articles, try these specific workarounds:
+1. For Wikipedia specifically, add "?action=render" to the article URL
+2. Download the article content manually and upload it directly
+3. If you need a specific section, try using the Wikipedia mobile API`;
       }
       
       // Handle text content (HTML, plain text, etc.)
@@ -202,10 +238,14 @@ For Wikipedia or similar sites with CORS restrictions, you can:
     console.error(`Error fetching URL ${url}:`, error);
     return `Error fetching URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}. 
     
-This is likely due to CORS restrictions. For websites like Wikipedia that restrict direct access:
-1. Download the page content manually to your device
-2. Upload the saved file directly to the chat
-3. Or try using the site's API if available`;
+**CORS Restriction Detected**
+
+This website does not allow direct access from web applications due to CORS restrictions.
+
+For Wikipedia articles, try these specific workarounds:
+1. For Wikipedia specifically, add "?action=render" to the article URL
+2. Download the article content manually and upload it directly
+3. If you need a specific section, try using the Wikipedia mobile API`;
   }
 }
 

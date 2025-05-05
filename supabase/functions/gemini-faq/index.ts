@@ -14,6 +14,51 @@ async function fetchUrlRawContent(url: string): Promise<string> {
   try {
     console.log("Server-side fetching URL content:", url);
     
+    // Special handling for Wikipedia URLs
+    if (url.includes('wikipedia.org')) {
+      // For Wikipedia, try to use the API instead of direct page access
+      const pageTitle = url.split('/wiki/')[1];
+      if (pageTitle) {
+        try {
+          const apiUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${pageTitle}`;
+          console.log("Using Wikipedia API instead:", apiUrl);
+          
+          const response = await fetch(apiUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; GeminiAI/1.0; +https://lovable.dev)',
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Wikipedia API error: ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          // Construct a nice response with title, extract and content
+          let content = `# ${data.title}\n\n`;
+          
+          if (data.thumbnail && data.thumbnail.source) {
+            content += `[Image: ${data.title} thumbnail available]\n\n`;
+          }
+          
+          if (data.extract) {
+            content += `${data.extract}\n\n`;
+          }
+          
+          if (data.extract_html) {
+            content += `Full article available at: ${url}\n`;
+          }
+          
+          return content;
+        } catch (wikiApiError) {
+          console.error("Wikipedia API error:", wikiApiError);
+          // Fall back to regular approach if API fails
+        }
+      }
+    }
+    
     // Add a user-agent header to avoid being blocked by some websites
     const response = await fetch(url, {
       headers: {
@@ -57,10 +102,16 @@ async function fetchUrlRawContent(url: string): Promise<string> {
     return `[Content of type ${contentType} cannot be displayed as text]`;
   } catch (error) {
     console.error("Error in server-side URL fetch:", error);
-    return `Error fetching URL content: ${error.message}. This may be due to CORS restrictions from the website. For Wikipedia or similar sites, try using their API if available, or download the content manually and upload it directly.`;
+    return `Error fetching URL content: ${error.message}. 
+
+For Wikipedia or similar websites with CORS restrictions:
+1. Try using the Wikipedia API directly: https://en.wikipedia.org/api/rest_v1/
+2. For Wikipedia articles, you can append "?action=raw" to the URL to get raw content
+3. Or download the content manually and upload it directly`;
   }
 }
 
+// Helper function to fetch raw content from URL
 async function fetchAndEncodeImage(url: string): Promise<string | null> {
   try {
     console.log("Fetching image from URL:", url);
@@ -96,7 +147,7 @@ serve(async (req) => {
       isSuggestionRequest, 
       cacheKey, 
       refreshSuggestions,
-      rawUrlFetch // New flag to indicate if this is a raw URL fetch request
+      rawUrlFetch // Flag to indicate if this is a raw URL fetch request
     } = await req.json();
 
     if (!prompt && !rawUrlFetch) {
