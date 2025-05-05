@@ -1,3 +1,4 @@
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -59,7 +60,8 @@ async function fetchUrlRawContent(url: string): Promise<string> {
       }
     }
     
-    // Add a user-agent header to avoid being blocked by some websites
+    // Generic URL content fetching for any website
+    // Add a robust user-agent header to avoid being blocked by some websites
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; GeminiAI/1.0; +https://lovable.dev)'
@@ -104,10 +106,11 @@ async function fetchUrlRawContent(url: string): Promise<string> {
     console.error("Error in server-side URL fetch:", error);
     return `Error fetching URL content: ${error.message}. 
 
-For Wikipedia or similar websites with CORS restrictions:
-1. Try using the Wikipedia API directly: https://en.wikipedia.org/api/rest_v1/
-2. For Wikipedia articles, you can append "?action=raw" to the URL to get raw content
-3. Or download the content manually and upload it directly`;
+For websites with CORS restrictions:
+1. Try downloading the content manually and upload it directly
+2. For Wikipedia articles, we've already attempted to use their API but failed
+3. Some websites actively block automated access - in these cases, manual download may be the only option
+4. For sites with paywalls or login requirements, you'll need to download content after logging in`;
   }
 }
 

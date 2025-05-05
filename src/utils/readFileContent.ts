@@ -54,6 +54,7 @@ export async function readFileContent(file: File): Promise<string | null> {
 
 /**
  * Fetches content directly from a URL, with improved error handling and CORS handling
+ * Works with any website, not just Wikipedia
  */
 export async function fetchUrlContent(url: string): Promise<string | null> {
   try {
@@ -70,44 +71,7 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       return `Invalid URL format: ${url}`;
     }
     
-    // Special handling for Wikipedia URLs
-    if (url.includes('wikipedia.org')) {
-      const isWikiArticle = url.includes('/wiki/');
-      if (isWikiArticle) {
-        // For Wikipedia articles, try to improve the request
-        const improvedUrl = url.includes('?') ? 
-          `${url}&action=render` : // Add render parameter to existing URL with parameters
-          `${url}?action=render`;  // Add render parameter as first parameter
-        
-        console.log(`Attempting to use Wikipedia render mode: ${improvedUrl}`);
-        
-        try {
-          // First try with the server-side fetch using improved URL
-          const response = await fetch('/api/gemini-faq', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              prompt: `Fetch and return only the raw content from this URL without any analysis: ${improvedUrl}`,
-              rawUrlFetch: true,
-            }),
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            if (data.answer && typeof data.answer === 'string' && !data.answer.startsWith('Error')) {
-              console.log('Successfully fetched Wikipedia content in render mode');
-              return `Wikipedia article: ${url}\n\n${data.answer}`;
-            }
-          }
-        } catch (renderError) {
-          console.error('Error with Wikipedia render mode:', renderError);
-        }
-      }
-    }
-    
-    // Use the Supabase Edge Function for fetching external URLs
+    // Universal approach - try our server-side proxy first for ANY website
     try {
       const response = await fetch('/api/gemini-faq', {
         method: 'POST',
@@ -127,12 +91,16 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       
       const data = await response.json();
       
-      if (data.answer && data.answer.length > 0) {
+      if (data.answer && typeof data.answer === 'string' && !data.answer.startsWith('Error')) {
         console.log(`Successfully fetched content via server for ${url}, length: ${data.answer.length} chars`);
         return `Content from URL: ${url}\n\n${data.answer}`;
       }
       
-      throw new Error('Empty response from server');
+      if (data.error) {
+        console.error(`Server returned error: ${data.error}`);
+      }
+      
+      throw new Error('Empty or error response from server');
     } catch (serverFetchError) {
       console.log('Server fetch failed, attempting direct fetch:', serverFetchError);
       
@@ -152,11 +120,11 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
 **CORS Restriction Detected**
 
 This website does not allow direct access from web applications due to CORS restrictions.
+Here are some workarounds you can try:
 
-For Wikipedia articles, try these specific workarounds:
-1. For Wikipedia specifically, add "?action=render" to the article URL
-2. Download the article content manually and upload it directly
-3. If you need a specific section, try using the Wikipedia mobile API`;
+1. Download the content manually and upload it directly
+2. Some websites actively block automated access - in these cases, manual download is necessary
+3. For sites with paywalls or login requirements, you'll need to download content after logging in`;
       }
       
       // Handle text content (HTML, plain text, etc.)
@@ -241,11 +209,11 @@ For Wikipedia articles, try these specific workarounds:
 **CORS Restriction Detected**
 
 This website does not allow direct access from web applications due to CORS restrictions.
+Here are some workarounds you can try:
 
-For Wikipedia articles, try these specific workarounds:
-1. For Wikipedia specifically, add "?action=render" to the article URL
-2. Download the article content manually and upload it directly
-3. If you need a specific section, try using the Wikipedia mobile API`;
+1. Download the content manually and upload it directly
+2. Some websites actively block automated access - in these cases, manual download is necessary
+3. For sites with paywalls or login requirements, you'll need to download content after logging in`;
   }
 }
 
