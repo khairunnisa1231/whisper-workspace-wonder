@@ -16,7 +16,7 @@ export async function readFileContent(file: File): Promise<string | null> {
     
     // Special handling for URL type files
     if (file.type === 'application/url' && 'url' in file) {
-      return `URL document: ${(file as any).url}`;
+      return await fetchUrlContent((file as any).url);
     }
     
     // Handle text, pdf, markdown, code files
@@ -78,6 +78,133 @@ export async function readFileContent(file: File): Promise<string | null> {
 }
 
 /**
+ * Fetches content directly from a URL, with support for different document types
+ */
+export async function fetchUrlContent(url: string): Promise<string | null> {
+  try {
+    console.log(`Fetching content from URL: ${url}`);
+    
+    // Validate URL
+    let validUrl: URL;
+    try {
+      validUrl = new URL(url);
+      if (!validUrl.protocol.startsWith('http')) {
+        return `Invalid URL: ${url} - Only HTTP and HTTPS protocols are supported`;
+      }
+    } catch (e) {
+      return `Invalid URL format: ${url}`;
+    }
+    
+    // Fetch the content
+    const response = await fetch(url, { 
+      // Use no-cors for cross-origin requests that would otherwise fail
+      // But note this limits what we can do with the response
+      mode: 'cors',
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain,application/pdf,*/*'
+      }
+    });
+    
+    if (!response.ok) {
+      return `Failed to fetch content from ${url}: ${response.status} ${response.statusText}`;
+    }
+    
+    // Get content type and filename from response
+    const contentType = response.headers.get('content-type') || '';
+    const contentDisposition = response.headers.get('content-disposition');
+    let filename = url.split('/').pop() || 'document';
+    
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch) {
+        filename = filenameMatch[1];
+      }
+    }
+    
+    console.log(`Content type for ${url}: ${contentType}`);
+    
+    // Handle PDF content
+    if (contentType.includes('application/pdf')) {
+      const arrayBuffer = await response.arrayBuffer();
+      try {
+        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+        console.log(`PDF loaded from URL with ${pdf.numPages} pages`);
+        
+        let fullText = `PDF Document from URL: ${url}\nFilename: ${filename}\n\n`;
+        // Process up to first 20 pages
+        const maxPages = Math.min(pdf.numPages, 20);
+        
+        for (let i = 1; i <= maxPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items.map((item: any) => item.str).join(' ');
+          fullText += `Page ${i}:\n${pageText}\n\n`;
+        }
+        
+        if (pdf.numPages > maxPages) {
+          fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
+        }
+        
+        console.log(`Extracted ${fullText.length} characters from PDF URL`);
+        return fullText;
+      } catch (pdfError) {
+        console.error(`Error extracting PDF content from URL: ${pdfError}`);
+        return `Failed to extract content from PDF at ${url}: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`;
+      }
+    }
+    
+    // Handle text content (HTML, plain text, etc.)
+    if (contentType.includes('text/') || 
+        contentType.includes('application/json') || 
+        contentType.includes('application/xml') || 
+        contentType.includes('application/javascript')) {
+      const text = await response.text();
+      let processedText = text;
+      
+      // For HTML content, try to extract only the main content to avoid noise
+      if (contentType.includes('text/html')) {
+        // Simple extraction of text with HTML markup removed
+        processedText = text
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
+          .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '') // Remove header
+          .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '') // Remove footer
+          .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')         // Remove navigation
+          .replace(/<[^>]+>/g, ' ')                                         // Remove remaining HTML tags
+          .replace(/\s{2,}/g, ' ')                                          // Normalize whitespace
+          .trim();
+      }
+      
+      // Truncate if too large
+      const maxLength = 50000;
+      let result = `Document from URL: ${url}\nFilename: ${filename}\nType: ${contentType}\n\n`;
+      
+      if (processedText.length > maxLength) {
+        result += processedText.substring(0, maxLength) + '\n\n[Content truncated due to size limitations...]';
+        console.log(`Text content from ${url} truncated to ${maxLength} characters`);
+      } else {
+        result += processedText;
+        console.log(`Extracted ${processedText.length} characters of text content from ${url}`);
+      }
+      
+      return result;
+    }
+    
+    // Handle image content
+    if (contentType.startsWith('image/')) {
+      return `[Image from URL: ${url}, Type: ${contentType}]\nThis URL contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
+    }
+    
+    // For other content types
+    return `Document from URL: ${url}\nType: ${contentType}\nFilename: ${filename}\n(Content preview unavailable for this type of document)`;
+    
+  } catch (error) {
+    console.error(`Error fetching URL ${url}:`, error);
+    return `Error fetching URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+  }
+}
+
+/**
  * Gets the content of a file from a URL
  * Used for files that have been uploaded and have a URL
  */
@@ -85,7 +212,7 @@ export async function getFileContent(file: any): Promise<string | null> {
   try {
     // Special handling for URL type files
     if (file.type === 'application/url' && file.url) {
-      return `External document URL: ${file.url}`;
+      return await fetchUrlContent(file.url);
     }
     
     if (!file.url) {
