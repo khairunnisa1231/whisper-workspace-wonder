@@ -13,7 +13,13 @@ const corsHeaders = {
 async function fetchUrlRawContent(url: string): Promise<string> {
   try {
     console.log("Server-side fetching URL content:", url);
-    const response = await fetch(url);
+    
+    // Add a user-agent header to avoid being blocked by some websites
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; GeminiAI/1.0; +https://lovable.dev)'
+      }
+    });
     
     if (!response.ok) {
       throw new Error(`Failed to fetch with status: ${response.status} ${response.statusText}`);
@@ -51,7 +57,7 @@ async function fetchUrlRawContent(url: string): Promise<string> {
     return `[Content of type ${contentType} cannot be displayed as text]`;
   } catch (error) {
     console.error("Error in server-side URL fetch:", error);
-    return `Error fetching URL content: ${error.message}`;
+    return `Error fetching URL content: ${error.message}. This may be due to CORS restrictions from the website. For Wikipedia or similar sites, try using their API if available, or download the content manually and upload it directly.`;
   }
 }
 

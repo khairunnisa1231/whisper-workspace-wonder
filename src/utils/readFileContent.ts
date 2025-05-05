@@ -39,8 +39,6 @@ export async function readFileContent(file: File): Promise<string | null> {
       return text;
     }
     
-    // ... keep existing code (PDF handling)
-    
     // Handle image files - provide descriptive information
     if (mime.startsWith("image/")) {
       return `[Image File: ${file.name}, Type: ${mime}]\nThis file contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
@@ -84,7 +82,7 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
         },
         body: JSON.stringify({
           prompt: `Fetch and return only the raw content from this URL without any analysis: ${url}`,
-          includeFileContent: false,
+          rawUrlFetch: true, // Flag to specify this is a raw URL fetch request
         }),
       });
       
@@ -109,26 +107,67 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       const directResponse = await fetch(url, { 
         mode: 'cors',
         headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; GeminiAI/1.0; +https://lovable.dev)',
           'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain,application/pdf,*/*'
         }
       });
       
       if (!directResponse.ok) {
-        return `Failed to fetch content from ${url}: ${directResponse.status} ${directResponse.statusText}. This may be due to CORS restrictions or the website not allowing direct access.`;
+        return `Failed to fetch content from ${url}: ${directResponse.status} ${directResponse.statusText}. 
+        
+This is likely due to CORS restrictions - the website doesn't allow direct access from web applications.
+
+For Wikipedia or similar sites with CORS restrictions, you can:
+1. Download the page content manually
+2. Upload the file directly instead of using a URL
+3. Try using the site's API if available (e.g., Wikipedia has an API)`;
       }
       
-      // Get content type and filename from response
-      const contentType = directResponse.headers.get('content-type') || '';
-      let filename = url.split('/').pop() || 'document';
+      // Handle text content (HTML, plain text, etc.)
+      if (directResponse.headers.get('content-type')?.includes('text/') || 
+          directResponse.headers.get('content-type')?.includes('application/json') || 
+          directResponse.headers.get('content-type')?.includes('application/xml') || 
+          directResponse.headers.get('content-type')?.includes('application/javascript')) {
+        const text = await directResponse.text();
+        let processedText = text;
+        
+        // For HTML content, try to extract only the main content to avoid noise
+        if (directResponse.headers.get('content-type')?.includes('text/html')) {
+          // Simple extraction of text with HTML markup removed
+          processedText = text
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
+            .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '') // Remove header
+            .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '') // Remove footer
+            .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')         // Remove navigation
+            .replace(/<[^>]+>/g, ' ')                                         // Remove remaining HTML tags
+            .replace(/\s{2,}/g, ' ')                                          // Normalize whitespace
+            .trim();
+        }
+        
+        // Truncate if too large
+        const maxLength = 50000;
+        let result = `Document from URL: ${url}\nFilename: ${url.split('/').pop() || 'document'}\nType: ${directResponse.headers.get('content-type') || 'unknown'}\n\n`;
+        
+        if (processedText.length > maxLength) {
+          result += processedText.substring(0, maxLength) + '\n\n[Content truncated due to size limitations...]';
+          console.log(`Text content from ${url} truncated to ${maxLength} characters`);
+        } else {
+          result += processedText;
+          console.log(`Extracted ${processedText.length} characters of text content from ${url}`);
+        }
+        
+        return result;
+      }
       
       // Handle PDF content
-      if (contentType.includes('application/pdf')) {
+      if (directResponse.headers.get('content-type')?.includes('application/pdf')) {
         const arrayBuffer = await directResponse.arrayBuffer();
         try {
           const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
           console.log(`PDF loaded from URL with ${pdf.numPages} pages`);
           
-          let fullText = `PDF Document from URL: ${url}\nFilename: ${filename}\n\n`;
+          let fullText = `PDF Document from URL: ${url}\nFilename: ${url.split('/').pop() || 'document'}\n\n`;
           // Process up to first 20 pages
           const maxPages = Math.min(pdf.numPages, 20);
           
@@ -151,54 +190,22 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
         }
       }
       
-      // Handle text content (HTML, plain text, etc.)
-      if (contentType.includes('text/') || 
-          contentType.includes('application/json') || 
-          contentType.includes('application/xml') || 
-          contentType.includes('application/javascript')) {
-        const text = await directResponse.text();
-        let processedText = text;
-        
-        // For HTML content, try to extract only the main content to avoid noise
-        if (contentType.includes('text/html')) {
-          // Simple extraction of text with HTML markup removed
-          processedText = text
-            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
-            .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '') // Remove header
-            .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '') // Remove footer
-            .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')         // Remove navigation
-            .replace(/<[^>]+>/g, ' ')                                         // Remove remaining HTML tags
-            .replace(/\s{2,}/g, ' ')                                          // Normalize whitespace
-            .trim();
-        }
-        
-        // Truncate if too large
-        const maxLength = 50000;
-        let result = `Document from URL: ${url}\nFilename: ${filename}\nType: ${contentType}\n\n`;
-        
-        if (processedText.length > maxLength) {
-          result += processedText.substring(0, maxLength) + '\n\n[Content truncated due to size limitations...]';
-          console.log(`Text content from ${url} truncated to ${maxLength} characters`);
-        } else {
-          result += processedText;
-          console.log(`Extracted ${processedText.length} characters of text content from ${url}`);
-        }
-        
-        return result;
-      }
-      
       // Handle image content
-      if (contentType.startsWith('image/')) {
-        return `[Image from URL: ${url}, Type: ${contentType}]\nThis URL contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
+      if (directResponse.headers.get('content-type')?.startsWith('image/')) {
+        return `[Image from URL: ${url}, Type: ${directResponse.headers.get('content-type') || 'unknown'}, URL: ${url}]\nThis URL contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
       }
       
       // For other content types
-      return `Document from URL: ${url}\nType: ${contentType}\nFilename: ${filename}\n(Content preview unavailable for this type of document)`;
+      return `Document from URL: ${url}\nType: ${directResponse.headers.get('content-type') || 'unknown'}\nFilename: ${url.split('/').pop() || 'document'}\n(Content preview unavailable for this type of document)`;
     }
   } catch (error) {
     console.error(`Error fetching URL ${url}:`, error);
-    return `Error fetching URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}. If this is a website with CORS restrictions, try downloading the content first and then uploading the file directly.`;
+    return `Error fetching URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}. 
+    
+This is likely due to CORS restrictions. For websites like Wikipedia that restrict direct access:
+1. Download the page content manually to your device
+2. Upload the saved file directly to the chat
+3. Or try using the site's API if available`;
   }
 }
 
