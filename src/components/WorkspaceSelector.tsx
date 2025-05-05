@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,9 +22,10 @@ import { useToast } from "@/hooks/use-toast";
 
 interface WorkspaceSelectorProps {
   onSelect: (workspaceId: string) => void;
+  initialWorkspaceId?: string;
 }
 
-export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
+export function WorkspaceSelector({ onSelect, initialWorkspaceId }: WorkspaceSelectorProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
@@ -52,10 +52,20 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
         setWorkspaces(userWorkspaces);
         setLastFetchedUserId(user.id);
         
-        // Select the first workspace by default
-        if (userWorkspaces.length > 0 && !selectedWorkspace) {
-          setSelectedWorkspace(userWorkspaces[0]);
-          onSelect(userWorkspaces[0].id);
+        // Select the first workspace by default or the one specified by initialWorkspaceId
+        if (userWorkspaces.length > 0) {
+          let workspaceToSelect = userWorkspaces[0];
+          
+          // If initialWorkspaceId is provided, try to find that workspace
+          if (initialWorkspaceId) {
+            const initialWorkspace = userWorkspaces.find(w => w.id === initialWorkspaceId);
+            if (initialWorkspace) {
+              workspaceToSelect = initialWorkspace;
+            }
+          }
+          
+          setSelectedWorkspace(workspaceToSelect);
+          onSelect(workspaceToSelect.id);
         }
       } catch (err) {
         console.error('Error loading workspaces:', err);
@@ -67,7 +77,7 @@ export function WorkspaceSelector({ onSelect }: WorkspaceSelectorProps) {
     }
     
     loadWorkspaces();
-  }, [user, onSelect, selectedWorkspace, lastFetchedUserId]);
+  }, [user, onSelect, initialWorkspaceId, lastFetchedUserId]);
   
   // Memoize handlers to prevent unnecessary re-renders
   const handleSelect = useCallback((workspace: Workspace) => {

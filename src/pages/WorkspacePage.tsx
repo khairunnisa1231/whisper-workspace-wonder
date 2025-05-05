@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
@@ -152,6 +153,7 @@ export default function WorkspacePage() {
   };
   
   const handleOpenChat = (workspaceId: string) => {
+    // Navigate to the chat page with the workspace ID in the URL
     navigate(`/chat?workspace=${workspaceId}`);
   };
 

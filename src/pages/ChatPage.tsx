@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage } from "@/components/ChatMessage";
@@ -29,6 +29,7 @@ import { getFileContent } from "@/utils/readFileContent";
 function ChatPage() {
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
   const { toast } = useToast();
   const { chatStyle, botImageUrl, setChatStyle } = useSettings();
@@ -92,6 +93,19 @@ function ChatPage() {
   const [inviteStatus, setInviteStatus] = useState<null | "success" | "error" | "notfound">(null);
   const [inviteLoading, setInviteLoading] = useState(false);
 
+  // Parse workspace ID from URL query parameters when component loads
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      const queryParams = new URLSearchParams(location.search);
+      const workspaceId = queryParams.get('workspace');
+      
+      if (workspaceId && workspaceId !== activeWorkspaceId) {
+        console.log('Setting active workspace from URL params:', workspaceId);
+        setActiveWorkspace(workspaceId);
+      }
+    }
+  }, [isAuthenticated, isLoading, location.search, activeWorkspaceId, setActiveWorkspace]);
+  
   // Generate suggestions based on uploaded files and/or last message
   useEffect(() => {
     let isMounted = true;
