@@ -341,13 +341,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           type: 'application/url',
           url: (file as any).url,
           size: ((file as any).url as string).length,
-          uploadedAt: new Date().toISOString(),
+          uploadedAt: new Date().toISOString(), // Store as ISO string
           workspaceId: activeWorkspaceId,
           userId: user.id
-        };
+        } as unknown as WorkspaceFile; // Cast to WorkspaceFile after ensuring type compatibility
         
         console.log('Created URL file object:', urlFile);
-        setFiles(prev => [...prev, urlFile as WorkspaceFile]);
+        setFiles(prev => [...prev, urlFile]);
         
         toast({
           title: 'Success',

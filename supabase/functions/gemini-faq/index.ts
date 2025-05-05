@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
@@ -9,6 +8,52 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Helper function to fetch raw content from URL
+async function fetchUrlRawContent(url: string): Promise<string> {
+  try {
+    console.log("Server-side fetching URL content:", url);
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch with status: ${response.status} ${response.statusText}`);
+    }
+    
+    const contentType = response.headers.get('content-type') || '';
+    
+    // Handle different content types appropriately
+    if (contentType.includes('text/html') || 
+        contentType.includes('text/plain') ||
+        contentType.includes('application/json') ||
+        contentType.includes('text/xml') ||
+        contentType.includes('application/xml')) {
+      const text = await response.text();
+      
+      // For HTML, try to extract main content
+      if (contentType.includes('text/html')) {
+        // Simple extraction to avoid entire HTML structure
+        let processedText = text
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+          .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '')
+          .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '')
+          .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+        
+        return processedText;
+      }
+      
+      return text;
+    }
+    
+    return `[Content of type ${contentType} cannot be displayed as text]`;
+  } catch (error) {
+    console.error("Error in server-side URL fetch:", error);
+    return `Error fetching URL content: ${error.message}`;
+  }
+}
 
 async function fetchAndEncodeImage(url: string): Promise<string | null> {
   try {
@@ -44,10 +89,11 @@ serve(async (req) => {
       fileContext, 
       isSuggestionRequest, 
       cacheKey, 
-      refreshSuggestions 
+      refreshSuggestions,
+      rawUrlFetch // New flag to indicate if this is a raw URL fetch request
     } = await req.json();
 
-    if (!prompt) {
+    if (!prompt && !rawUrlFetch) {
       return new Response(
         JSON.stringify({ error: "Missing prompt in request body" }),
         { 
@@ -65,6 +111,35 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
+    }
+
+    // Special case for raw URL fetching (to bypass CORS)
+    if (rawUrlFetch && prompt) {
+      // Extract URL from prompt - assuming prompt is like "Fetch URL: https://..."
+      const urlMatch = prompt.match(/https?:\/\/[^\s"']+/);
+      if (urlMatch) {
+        const url = urlMatch[0];
+        console.log("Raw URL fetch request for:", url);
+        
+        try {
+          const content = await fetchUrlRawContent(url);
+          return new Response(
+            JSON.stringify({ answer: content }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        } catch (fetchError) {
+          return new Response(
+            JSON.stringify({ 
+              error: "Failed to fetch URL content", 
+              details: fetchError.message 
+            }),
+            { 
+              status: 422,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      }
     }
 
     // Log request type for debugging

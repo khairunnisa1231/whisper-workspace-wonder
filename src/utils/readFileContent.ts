@@ -1,4 +1,3 @@
-
 import * as pdfjs from 'pdfjs-dist';
 
 // Set the PDF.js worker location using the CDN approach instead of direct import
@@ -40,31 +39,7 @@ export async function readFileContent(file: File): Promise<string | null> {
       return text;
     }
     
-    if (mime === "application/pdf") {
-      // Extract text from PDF using pdf.js
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-      
-      console.log(`PDF loaded with ${pdf.numPages} pages`);
-      
-      let fullText = `PDF File: ${file.name}\n\n`;
-      // Process up to first 20 pages (to avoid very large files)
-      const maxPages = Math.min(pdf.numPages, 20);
-      
-      for (let i = 1; i <= maxPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-        fullText += `Page ${i}:\n${pageText}\n\n`;
-      }
-      
-      if (pdf.numPages > maxPages) {
-        fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
-      }
-      
-      console.log(`Extracted ${fullText.length} characters from PDF`);
-      return fullText;
-    }
+    // ... keep existing code (PDF handling)
     
     // Handle image files - provide descriptive information
     if (mime.startsWith("image/")) {
@@ -80,7 +55,7 @@ export async function readFileContent(file: File): Promise<string | null> {
 }
 
 /**
- * Fetches content directly from a URL, with improved error handling and formatting
+ * Fetches content directly from a URL, with improved error handling and CORS handling
  */
 export async function fetchUrlContent(url: string): Promise<string | null> {
   try {
@@ -97,110 +72,133 @@ export async function fetchUrlContent(url: string): Promise<string | null> {
       return `Invalid URL format: ${url}`;
     }
     
-    // Fetch the content with improved error handling
-    const response = await fetch(url, { 
-      mode: 'cors',
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain,application/pdf,*/*'
+    // For external URLs that might have CORS issues, use the Gemini function to fetch content
+    // This is needed because direct fetch from browser may fail due to CORS
+    try {
+      // Use the Supabase Edge Function for fetching external URLs
+      // This avoids CORS issues by fetching server-side
+      const response = await fetch('/api/gemini-faq', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: `Fetch and return only the raw content from this URL without any analysis: ${url}`,
+          includeFileContent: false,
+        }),
+      });
+      
+      if (!response.ok) {
+        console.log(`Server-side fetch failed with status: ${response.status}, trying direct fetch as fallback`);
+        throw new Error('Server-side fetch failed');
       }
-    });
-    
-    if (!response.ok) {
-      return `Failed to fetch content from ${url}: ${response.status} ${response.statusText}`;
-    }
-    
-    // Get content type and filename from response
-    const contentType = response.headers.get('content-type') || '';
-    const contentDisposition = response.headers.get('content-disposition');
-    let filename = url.split('/').pop() || 'document';
-    
-    if (contentDisposition) {
-      const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-      if (filenameMatch) {
-        filename = filenameMatch[1];
+      
+      const data = await response.json();
+      
+      if (data.answer && data.answer.length > 0) {
+        console.log(`Successfully fetched content via server for ${url}, length: ${data.answer.length} chars`);
+        return `Content from URL: ${url}\n\n${data.answer}`;
       }
-    }
-    
-    console.log(`Content type for ${url}: ${contentType}`);
-    
-    // Handle PDF content
-    if (contentType.includes('application/pdf')) {
-      const arrayBuffer = await response.arrayBuffer();
-      try {
-        const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
-        console.log(`PDF loaded from URL with ${pdf.numPages} pages`);
+      
+      throw new Error('Empty response from server');
+    } catch (serverFetchError) {
+      console.log('Server fetch failed, attempting direct fetch:', serverFetchError);
+      
+      // Fallback to direct fetch (will work for CORS-enabled sites)
+      console.log('Attempting direct fetch as fallback for:', url);
+      const directResponse = await fetch(url, { 
+        mode: 'cors',
+        headers: {
+          'Accept': 'text/html,application/xhtml+xml,application/xml,text/plain,application/pdf,*/*'
+        }
+      });
+      
+      if (!directResponse.ok) {
+        return `Failed to fetch content from ${url}: ${directResponse.status} ${directResponse.statusText}. This may be due to CORS restrictions or the website not allowing direct access.`;
+      }
+      
+      // Get content type and filename from response
+      const contentType = directResponse.headers.get('content-type') || '';
+      let filename = url.split('/').pop() || 'document';
+      
+      // Handle PDF content
+      if (contentType.includes('application/pdf')) {
+        const arrayBuffer = await directResponse.arrayBuffer();
+        try {
+          const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+          console.log(`PDF loaded from URL with ${pdf.numPages} pages`);
+          
+          let fullText = `PDF Document from URL: ${url}\nFilename: ${filename}\n\n`;
+          // Process up to first 20 pages
+          const maxPages = Math.min(pdf.numPages, 20);
+          
+          for (let i = 1; i <= maxPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map((item: any) => item.str).join(' ');
+            fullText += `Page ${i}:\n${pageText}\n\n`;
+          }
+          
+          if (pdf.numPages > maxPages) {
+            fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
+          }
+          
+          console.log(`Extracted ${fullText.length} characters from PDF URL`);
+          return fullText;
+        } catch (pdfError) {
+          console.error(`Error extracting PDF content from URL: ${pdfError}`);
+          return `Failed to extract content from PDF at ${url}: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`;
+        }
+      }
+      
+      // Handle text content (HTML, plain text, etc.)
+      if (contentType.includes('text/') || 
+          contentType.includes('application/json') || 
+          contentType.includes('application/xml') || 
+          contentType.includes('application/javascript')) {
+        const text = await directResponse.text();
+        let processedText = text;
         
-        let fullText = `PDF Document from URL: ${url}\nFilename: ${filename}\n\n`;
-        // Process up to first 20 pages
-        const maxPages = Math.min(pdf.numPages, 20);
-        
-        for (let i = 1; i <= maxPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          fullText += `Page ${i}:\n${pageText}\n\n`;
+        // For HTML content, try to extract only the main content to avoid noise
+        if (contentType.includes('text/html')) {
+          // Simple extraction of text with HTML markup removed
+          processedText = text
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+            .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
+            .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '') // Remove header
+            .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '') // Remove footer
+            .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')         // Remove navigation
+            .replace(/<[^>]+>/g, ' ')                                         // Remove remaining HTML tags
+            .replace(/\s{2,}/g, ' ')                                          // Normalize whitespace
+            .trim();
         }
         
-        if (pdf.numPages > maxPages) {
-          fullText += `[Note: Only showing first ${maxPages} of ${pdf.numPages} pages]\n`;
+        // Truncate if too large
+        const maxLength = 50000;
+        let result = `Document from URL: ${url}\nFilename: ${filename}\nType: ${contentType}\n\n`;
+        
+        if (processedText.length > maxLength) {
+          result += processedText.substring(0, maxLength) + '\n\n[Content truncated due to size limitations...]';
+          console.log(`Text content from ${url} truncated to ${maxLength} characters`);
+        } else {
+          result += processedText;
+          console.log(`Extracted ${processedText.length} characters of text content from ${url}`);
         }
         
-        console.log(`Extracted ${fullText.length} characters from PDF URL`);
-        return fullText;
-      } catch (pdfError) {
-        console.error(`Error extracting PDF content from URL: ${pdfError}`);
-        return `Failed to extract content from PDF at ${url}: ${pdfError instanceof Error ? pdfError.message : 'Unknown error'}`;
-      }
-    }
-    
-    // Handle text content (HTML, plain text, etc.)
-    if (contentType.includes('text/') || 
-        contentType.includes('application/json') || 
-        contentType.includes('application/xml') || 
-        contentType.includes('application/javascript')) {
-      const text = await response.text();
-      let processedText = text;
-      
-      // For HTML content, try to extract only the main content to avoid noise
-      if (contentType.includes('text/html')) {
-        // Simple extraction of text with HTML markup removed
-        processedText = text
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
-          .replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, '') // Remove header
-          .replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, '') // Remove footer
-          .replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, '')         // Remove navigation
-          .replace(/<[^>]+>/g, ' ')                                         // Remove remaining HTML tags
-          .replace(/\s{2,}/g, ' ')                                          // Normalize whitespace
-          .trim();
+        return result;
       }
       
-      // Truncate if too large
-      const maxLength = 50000;
-      let result = `Document from URL: ${url}\nFilename: ${filename}\nType: ${contentType}\n\n`;
-      
-      if (processedText.length > maxLength) {
-        result += processedText.substring(0, maxLength) + '\n\n[Content truncated due to size limitations...]';
-        console.log(`Text content from ${url} truncated to ${maxLength} characters`);
-      } else {
-        result += processedText;
-        console.log(`Extracted ${processedText.length} characters of text content from ${url}`);
+      // Handle image content
+      if (contentType.startsWith('image/')) {
+        return `[Image from URL: ${url}, Type: ${contentType}]\nThis URL contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
       }
       
-      return result;
+      // For other content types
+      return `Document from URL: ${url}\nType: ${contentType}\nFilename: ${filename}\n(Content preview unavailable for this type of document)`;
     }
-    
-    // Handle image content
-    if (contentType.startsWith('image/')) {
-      return `[Image from URL: ${url}, Type: ${contentType}]\nThis URL contains an image that may have important visual information. Gemini can extract information like charts, diagrams, text in images, people or objects shown, scenes depicted, and other visual elements. Please ask specific questions about what you'd like to know about this image.`;
-    }
-    
-    // For other content types
-    return `Document from URL: ${url}\nType: ${contentType}\nFilename: ${filename}\n(Content preview unavailable for this type of document)`;
-    
   } catch (error) {
     console.error(`Error fetching URL ${url}:`, error);
-    return `Error fetching URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    return `Error fetching URL ${url}: ${error instanceof Error ? error.message : 'Unknown error'}. If this is a website with CORS restrictions, try downloading the content first and then uploading the file directly.`;
   }
 }
 
