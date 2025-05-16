@@ -76,11 +76,17 @@ function ChatPage() {
     "Identify important patterns or trends"
   ]);
   
-  // Memoize active session to prevent unnecessary re-renders
+  // Memoize active session to prevent unnecessary re-renders and get the chat title
   const activeSession = useMemo(() => 
     sessions.find(s => s.id === activeSessionId),
     [sessions, activeSessionId]
   );
+  
+  // Get the first user message if available, to use as title
+  const firstUserMessage = useMemo(() => {
+    if (messages.length === 0) return null;
+    return messages.find(msg => msg.role === 'user')?.content;
+  }, [messages]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -368,6 +374,24 @@ function ChatPage() {
     );
   }
 
+  // Get appropriate chat title
+  const getChatTitle = () => {
+    if (activeSessionId) {
+      return sessions.find((s) => s.id === activeSessionId)?.title || "Conversation";
+    }
+    
+    // If there's no active session but we have a first user message, use that as title
+    if (firstUserMessage) {
+      // Truncate long messages
+      return firstUserMessage.length > 30 
+        ? `${firstUserMessage.substring(0, 30)}...`
+        : firstUserMessage;
+    }
+    
+    // Default fallback
+    return "New Conversation";
+  };
+
   return (
     <div className="flex h-screen flex-col">
       <Navbar />
@@ -408,9 +432,7 @@ function ChatPage() {
             
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-semibold">
-                {activeSessionId 
-                  ? sessions.find((s) => s.id === activeSessionId)?.title || "Conversation"
-                  : "New Conversation"}
+                {getChatTitle()}
               </h1>
               
               {activeSession && (
